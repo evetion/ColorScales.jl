@@ -83,7 +83,7 @@ Package extensions add adapters without changing core results:
 | `ColorScalesMakieExt` | Makie | Makie plot and Colorbar attribute bundles |
 | `ColorScalesPlotsExt` | Plots | Plots plot and colorbar attribute bundles |
 | `ColorScalesDistributionsExt` | Distributions | Ranges and breaks from a supplied distribution |
-| `ColorScalesCategoricalArraysExt` | CategoricalArrays | Assign observations to graduated classes |
+| `ColorScalesCategoricalArraysExt` | CategoricalArrays | `classify` observations into ordered graduated classes |
 
 Each plotting adapter translates an existing `ColorSpec`. It cannot inspect
 the original data or recompute statistics.
@@ -202,8 +202,10 @@ Plots.heatmap(z; p.plot...)
 ```
 
 For Makie, `plot` contains `colorrange` and `colormap`, while `colorbar`
-contains edge ticks and labels. For Plots, `plot` contains `clims`, `color`,
-and `colorbar_ticks`. Users override generated values with `merge`.
+contains ticks at class centers with interval labels. For Plots, `plot`
+contains `clims`, `color`, and equivalent `colorbar_ticks`. The class edges
+remain available for callers who prefer boundary ticks. Users override
+generated values with `merge`.
 
 Because range methods subtype `Function`, Plots can also evaluate them through
 its function-valued `clims` interface:
@@ -211,6 +213,10 @@ its function-valued `clims` interface:
 ```julia
 Plots.heatmap(z; clims=Percentile(2, 98))
 ```
+
+When CategoricalArrays is loaded, `classify(z, spec.breaks)` returns an
+ordered categorical array using the same right-closed intervals as the
+gradient.
 
 No macro, recipe, or package-owned plotting method belongs in the first
 release.
@@ -344,7 +350,7 @@ edge behavior.
 Makie and Plots extension tests verify exact NamedTuple keys and construct a
 minimal headless plot. Distributions tests compare range and break results
 with the supplied distribution's theoretical quantiles. CategoricalArrays
-tests verify values exactly on class edges.
+tests verify `classify` for values below, above, and exactly on class edges.
 
 ## Licensing and provenance
 
