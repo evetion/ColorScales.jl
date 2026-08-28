@@ -18,11 +18,18 @@ using ColorScales
     end
 
     @testset "pretty" begin
-        @test breaks(3:97, Pretty(5)).edges == [3.0, 20.0, 40.0, 60.0, 80.0, 97.0]
         @test Pretty().count == 7
         @test breaks(0:100, Pretty(5)).edges == [0.0, 20.0, 40.0, 60.0, 80.0, 100.0]
-        @test all(e -> e % 20 == 0, breaks(3:97, Pretty(5)).edges[2:(end - 1)])
+        @test all(e -> e % 20 == 0, breaks(3:97, Pretty(5)).edges)
         @test breaks([0.0, 1.0], Pretty(2)).edges == [0.0, 0.5, 1.0]
+    end
+
+    @testset "pretty widens the range to nice bounds" begin
+        # 3:97 is not already nice at either end, so both bounds move outward.
+        @test breaks(3:97, Pretty(5)).edges == [0.0, 20.0, 40.0, 60.0, 80.0, 100.0]
+        @test breaks(1:19, Pretty(2)).edges == [0.0, 10.0, 20.0]
+        # Already-nice bounds stay put.
+        @test breaks(0:100, Pretty(5)).edges[[1, end]] == [0.0, 100.0]
     end
 
     @testset "equal interval degrades at the float resolution" begin

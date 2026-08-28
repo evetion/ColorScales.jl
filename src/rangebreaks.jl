@@ -1,8 +1,11 @@
 """
 Range-based class breaks.
 
-These methods place class edges from the selected color range alone. The color
-range remains authoritative: the first and last edge always equal its endpoints.
+These methods place class edges from the selected color range alone.
+[`EqualInterval`](@ref) and [`Quantile`](@ref) keep the color range
+authoritative: their first and last edge always equal its endpoints.
+[`Pretty`](@ref) is the one exception: it may widen the range outward to nice
+bounds, and the widened bounds become the color range downstream.
 """
 
 """
@@ -67,29 +70,25 @@ function nicebracket(x::Float64)
 end
 
 """
-    stepinteriors(low, high, step) -> Vector{Float64}
+    niceedges(low, high, step) -> Vector{Float64}
 
-Multiples of `step` strictly inside `(low, high)`.
+Multiples of `step` from the largest one not above `low` to the smallest one
+not below `high`, i.e. `low` and `high` widened outward to the nearest
+multiples of `step`.
 """
-function stepinteriors(low::Float64, high::Float64, step::Float64)
-    lowest = floor(low / step) + 1
-    highest = ceil(high / step) - 1
-    interiors = Float64[]
-    highest < lowest && return interiors
-    for i in Int(lowest):Int(highest)
-        value = i * step
-        low < value < high && push!(interiors, value)
-    end
-    return interiors
+function niceedges(low::Float64, high::Float64, step::Float64)
+    lowest = floor(low / step)
+    highest = ceil(high / step)
+    return [i * step for i in Int(lowest):Int(highest)]
 end
 
 """
     prettyedges(low, high, count) -> Vector{Float64}
 
-Class edges keeping the exact color-range endpoints and using interior
-multiples of one nice step. Of the two nice steps bracketing `span / count`,
-the one whose class count is closest to the target wins; ties prefer the
-coarser step.
+Class edges on multiples of one nice step, widening `low` and `high` outward
+to the nearest such multiple. Of the two nice steps bracketing `span / count`,
+the one whose resulting class count is closest to the target wins; ties
+prefer the coarser step.
 """
 function prettyedges(low::Float64, high::Float64, count::Int)
     high <= low && return [low]
@@ -97,14 +96,14 @@ function prettyedges(low::Float64, high::Float64, count::Int)
     chosen = Float64[]
     score = typemax(Int)
     for step in (up, down)
-        interiors = stepinteriors(low, high, step)
-        candidate = abs(length(interiors) + 1 - count)
+        edges = niceedges(low, high, step)
+        candidate = abs(length(edges) - 1 - count)
         if candidate < score
             score = candidate
-            chosen = interiors
+            chosen = edges
         end
     end
-    return spanedges(chosen, low, high)
+    return dedupe(chosen)
 end
 
 """
@@ -122,8 +121,10 @@ end
 """
     Pretty(count=7)
 
-Classes whose interior edges are readable multiples of `{1, 2, 5} * 10^n`. The
-count is a target, so the result may hold a nearby number of classes.
+Classes whose edges are readable multiples of `{1, 2, 5} * 10^n`. The count is
+a target, so the result may hold a nearby number of classes. Unlike
+[`EqualInterval`](@ref) and [`Quantile`](@ref), `Pretty` may widen the color
+range outward so its outer edges are nice too, not just its interior ones.
 """
 struct Pretty <: BreakMethod
     count::Int

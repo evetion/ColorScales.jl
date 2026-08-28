@@ -71,6 +71,14 @@ using PlotUtils
         @test_throws ArgumentError colorspec([1.0, missing]; invalid = :error)
     end
 
+    @testset "pretty breaks widen the specification's color range" begin
+        spec = colorspec(1:19, Pretty(2))
+        @test spec.colorrange == (0.0, 20.0)
+        @test spec.breaks.edges == [0.0, 10.0, 20.0]
+        @test spec.gradient isa PlotUtils.CategoricalColorGradient
+        @test spec.gradient.values ≈ [0.0, 0.5, 1.0]
+    end
+
     @testset "constant graduated specification" begin
         spec = colorspec(fill(4.0, 5), Quantile(4))
         @test spec.colorrange == (4.0, 4.0)

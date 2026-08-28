@@ -12,9 +12,11 @@ retains the observations it came from.
 Completed color result. `breaks` is `nothing` for a continuous specification and
 a [`ClassBreaks`](@ref) for a graduated one, whose gradient is categorical.
 
-`colorrange` is exactly what the data gave, including the zero-width `(v, v)` of
-constant data. Only the plotting adapters widen that span into renderer-safe
-display limits.
+`colorrange` is what the data gave, including the zero-width `(v, v)` of
+constant data, except that a graduated specification's [`Pretty`](@ref) breaks
+may widen it outward to nice bounds; `colorrange` then matches those widened
+bounds, not the original data-derived range. Only the plotting adapters widen a
+zero-width span into renderer-safe display limits.
 """
 struct ColorSpec
     colorrange::Tuple{Float64, Float64}
@@ -93,7 +95,10 @@ function colorspec(data, method::BreakMethod; colorrange = Extrema(), colormap =
     obs = observe(data, requirement; invalid = policy)
     bounds = rangefrom(obs, selected)
     classes = ClassBreaks(breakedges(obs, method, bounds))
-    return ColorSpec(bounds, classes, classgradient(colormap, classes; colorrange = bounds))
+    # Most break methods span exactly `bounds`, but Pretty may widen it; the
+    # class edges are the source of truth for the resulting color range.
+    spanned = (first(classes.edges), last(classes.edges))
+    return ColorSpec(spanned, classes, classgradient(colormap, classes; colorrange = spanned))
 end
 
 """
