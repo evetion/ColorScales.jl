@@ -11,6 +11,10 @@ retains the observations it came from.
 
 Completed color result. `breaks` is `nothing` for a continuous specification and
 a [`ClassBreaks`](@ref) for a graduated one, whose gradient is categorical.
+
+`colorrange` is exactly what the data gave, including the zero-width `(v, v)` of
+constant data. Only the plotting adapters widen that span into renderer-safe
+display limits.
 """
 struct ColorSpec
     colorrange::Tuple{Float64, Float64}
@@ -90,6 +94,30 @@ function colorspec(data, method::BreakMethod; colorrange = Extrema(), colormap =
     bounds = rangefrom(obs, selected)
     classes = ClassBreaks(breakedges(obs, method, bounds))
     return ColorSpec(bounds, classes, classgradient(colormap, classes; colorrange = bounds))
+end
+
+"""
+    displayrange(bounds) -> Tuple{Float64,Float64}
+
+Renderer-safe display limits for the color range `bounds`.
+
+A nondegenerate range is returned unchanged. A constant range `(v, v)` has no
+defined position for `v`, so mapping it through a categorical gradient indexes
+with `nothing` and the renderer throws. Such a range is therefore widened
+symmetrically around `v` by a relative half-width of `sqrt(eps())`, floored at
+half a unit so that `v == 0` widens too, and clipped to `floatmax` so extreme
+centers stay finite.
+
+Only the plotting adapters widen. A [`ColorSpec`](@ref)'s own `colorrange`
+keeps the exact `(v, v)` computed from the data.
+"""
+function displayrange(bounds::Tuple{Float64, Float64})
+    low, high = bounds
+    low < high && return bounds
+    center = low
+    halfwidth = max(abs(center) * sqrt(eps(one(center))), oneunit(center) / 2)
+    limit = floatmax(center)
+    return (max(center - halfwidth, -limit), min(center + halfwidth, limit))
 end
 
 """

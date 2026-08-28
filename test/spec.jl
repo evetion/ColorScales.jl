@@ -95,6 +95,22 @@ using PlotUtils
         end
     end
 
+    @testset "renderer-safe display range" begin
+        @test ColorScales.displayrange((2.0, 8.0)) === (2.0, 8.0)
+        @test ColorScales.displayrange((7.0, 7.0)) == (6.5, 7.5)
+        @test ColorScales.displayrange((0.0, 0.0)) == (-0.5, 0.5)
+        for center in (0.0, 7.0, -7.0, 1.0e-300, 1.0e16, 1.0e300, -1.0e300)
+            low, high = ColorScales.displayrange((center, center))
+            @test isfinite(low) && isfinite(high)
+            @test low < center < high
+            @test high - center ≈ center - low
+        end
+        extreme = ColorScales.displayrange((floatmax(Float64), floatmax(Float64)))
+        @test all(isfinite, extreme)
+        @test extreme[1] < extreme[2]
+        @test extreme[1] <= floatmax(Float64) <= extreme[2]
+    end
+
     @testset "collapsed classes still match their gradient" begin
         spec = colorspec([1.0e6, 1.0e6 + 3.0e-10], EqualInterval(10))
         @test nclasses(spec.breaks) == 3

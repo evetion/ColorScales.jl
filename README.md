@@ -134,6 +134,26 @@ merge(makieattributes(spec).plot, (; colormap = :magma))
 No exported name collides with Makie or Plots, so `using ColorScales, Makie` and
 `using ColorScales, Plots` need no qualification.
 
+## Constant data
+
+A specification computed from constant data keeps its exact color range, but a
+renderer cannot map a value through a zero-width span — a categorical gradient
+has no position for it and throws. The adapters therefore widen the *display*
+limits symmetrically around the value, while `spec.colorrange` stays exact:
+
+```julia
+julia> spec = colorspec(fill(7.0, 4), Quantile(4));
+
+julia> spec.colorrange
+(7.0, 7.0)
+
+julia> makieattributes(spec).plot.colorrange
+(6.5, 7.5)
+
+julia> plotsattributes(spec).plot.clims
+(6.5, 7.5)
+```
+
 ## Right-closed intervals
 
 Classes are right-closed, `(a, b]`, and the first class includes the color

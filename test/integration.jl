@@ -3,6 +3,9 @@ using ColorScales
 using Makie
 using Plots
 
+# Render headlessly: GR must initialize without a window before the first plot.
+ENV["GKSwstype"] = "100"
+
 include(joinpath(@__DIR__, "..", "examples", "makie.jl"))
 include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
 
@@ -98,6 +101,38 @@ include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
         @test !(:plots in names(ColorScales))
         @test !isdefined(ColorScales, :makie)
         @test !isdefined(ColorScales, :plots)
+    end
+
+    @testset "constant data still renders" begin
+        constant = fill(7.0, 10, 10)
+        spec = colorspec(constant, Quantile(4))
+        @test spec.colorrange == (7.0, 7.0)
+        @test spec.breaks.edges == [7.0]
+        @test nclasses(spec.breaks) == 1
+
+        makierange = makieattributes(spec).plot.colorrange
+        @test all(isfinite, makierange)
+        @test makierange[1] < 7.0 < makierange[2]
+
+        plotsrange = plotsattributes(spec).plot.clims
+        @test all(isfinite, plotsrange)
+        @test plotsrange[1] < 7.0 < plotsrange[2]
+
+        attributes = makieattributes(spec)
+        figure = Makie.Figure()
+        axis = Makie.Axis(figure[1, 1])
+        heatmap = Makie.heatmap!(axis, constant; attributes.plot...)
+        colorbar = Makie.Colorbar(figure[1, 2], heatmap; attributes.colorbar...)
+        @test colorbar isa Makie.Colorbar
+        @test collect(heatmap.colorrange[]) == collect(makierange)
+
+        plot = Plots.heatmap(constant; plotsattributes(spec).plot...)
+        @test plot isa Plots.Plot
+        @test plot[1][:clims] == plotsrange
+
+        rendered = IOBuffer()
+        show(rendered, MIME("image/png"), plot)
+        @test position(rendered) > 0
     end
 
     @testset "documented examples run" begin

@@ -12,9 +12,12 @@ Makie keyword arguments for `spec`.
 `heatmap!`. `colorbar` holds the `Colorbar` keyword arguments: class-centered
 `ticks` labelled with the class intervals for a graduated specification, and
 nothing for a continuous one, whose colorbar needs no override.
+
+A constant color range is widened to renderer-safe display limits around its
+value; `spec.colorrange` itself stays exact.
 """
 function ColorScales.makieattributes(spec::ColorSpec)
-    plot = (; colorrange = spec.colorrange, colormap = spec.gradient)
+    plot = (; colorrange = ColorScales.displayrange(spec.colorrange), colormap = spec.gradient)
     classes = spec.breaks
     classes === nothing && return (; plot = plot, colorbar = NamedTuple())
     return (; plot = plot, colorbar = (; ticks = (classcenters(classes), classes.labels)))
