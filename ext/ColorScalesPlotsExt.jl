@@ -4,7 +4,7 @@ using ColorScales
 using Plots
 
 """
-    plots(spec::ColorSpec) -> (; plot)
+    plotsattributes(spec::ColorSpec) -> (; plot)
 
 Plots keyword arguments for `spec`.
 
@@ -12,7 +12,7 @@ Plots keyword arguments for `spec`.
 class-centered `colorbar_ticks` labelled with the class intervals when `spec`
 is graduated.
 """
-function ColorScales.plots(spec::ColorSpec)
+function ColorScales.plotsattributes(spec::ColorSpec)
     classes = spec.breaks
     classes === nothing && return (; plot = (; clims = spec.colorrange, color = spec.gradient))
     ticks = (classcenters(classes), classes.labels)

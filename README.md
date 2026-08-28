@@ -84,15 +84,15 @@ no classes and a continuous gradient.
 
 ## Makie
 
-`makie(spec)` returns `(; plot, colorbar)`. Splat `plot` into your plotting call
-and `colorbar` into `Colorbar`. Graduated specifications tick each class center
-with its interval label; continuous ones leave the colorbar alone.
+`makieattributes(spec)` returns `(; plot, colorbar)`. Splat `plot` into your
+plotting call and `colorbar` into `Colorbar`. Graduated specifications tick each
+class center with its interval label; continuous ones leave the colorbar alone.
 
 ```julia
 using ColorScales, Makie, GLMakie
 
 spec = colorspec(elevation, Quantile(5); colorrange = Percentile(2, 98))
-attributes = makie(spec)
+attributes = makieattributes(spec)
 
 figure = Figure()
 axis = Axis(figure[1, 1])
@@ -105,15 +105,14 @@ A runnable version is [`examples/makie.jl`](examples/makie.jl), whose
 
 ## Plots
 
-`plots(spec)` returns `(; plot)` holding `clims`, `color`, and, for graduated
-specifications, `colorbar_ticks`.
+`plotsattributes(spec)` returns `(; plot)` holding `clims`, `color`, and, for
+graduated specifications, `colorbar_ticks`.
 
 ```julia
 using ColorScales, Plots
-using ColorScales: plots  # Makie also exports `plots`; this import picks ours
 
 spec = colorspec(elevation, Pretty(5); colorrange = Percentile(2, 98))
-heatmap(elevation; plots(spec).plot...)
+heatmap(elevation; plotsattributes(spec).plot...)
 ```
 
 Because the range methods are callable, Plots also accepts one directly as
@@ -129,8 +128,11 @@ A runnable version is [`examples/plots.jl`](examples/plots.jl), whose
 Your own keywords stay in charge — the adapters return plain named tuples:
 
 ```julia
-merge(makie(spec).plot, (; colormap = :magma))
+merge(makieattributes(spec).plot, (; colormap = :magma))
 ```
+
+No exported name collides with Makie or Plots, so `using ColorScales, Makie` and
+`using ColorScales, Plots` need no qualification.
 
 ## Right-closed intervals
 

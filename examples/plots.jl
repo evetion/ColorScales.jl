@@ -8,8 +8,6 @@
 #
 
 using ColorScales
-# Makie exports its own `plots`, so the explicit import keeps ours reachable.
-using ColorScales: plots
 using Plots
 
 """
@@ -27,5 +25,5 @@ function plots_example()
 
     spec = colorspec(elevation, Pretty(5); colorrange = Percentile(2, 98), colormap = :viridis)
 
-    return Plots.heatmap(elevation; plots(spec).plot..., title = "Elevation", colorbar_title = "metre")
+    return Plots.heatmap(elevation; plotsattributes(spec).plot..., title = "Elevation", colorbar_title = "metre")
 end

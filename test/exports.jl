@@ -7,7 +7,7 @@ using ColorScales
             :ClassBreaks, :ColorScales, :ColorSpec, :EqualInterval, :Extrema,
             :FixedRange, :MeanStd, :Percentile, :Pretty, :Quantile,
             :breaks, :classcenters, :classgradient, :colorrange, :colorspec,
-            :makie, :nclasses, :plots,
+            :makieattributes, :nclasses, :plotsattributes,
         ]
         @test sort(names(ColorScales)) == sort(expected)
     end

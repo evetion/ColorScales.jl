@@ -2,8 +2,6 @@ using Test
 using ColorScales
 using Makie
 using Plots
-# Makie exports its own `plots`, so the explicit import picks ours.
-using ColorScales: plots
 
 include(joinpath(@__DIR__, "..", "examples", "makie.jl"))
 include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
@@ -22,7 +20,7 @@ include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
     end
 
     @testset "makie adapter" begin
-        attributes = makie(spec)
+        attributes = makieattributes(spec)
         @test keys(attributes) == (:plot, :colorbar)
         @test keys(attributes.plot) == (:colorrange, :colormap)
         @test attributes.plot.colorrange == (2.98, 98.02)
@@ -35,21 +33,21 @@ include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
 
     @testset "makie adapter of a continuous specification" begin
         continuous = colorspec(z; colorrange = Percentile(2, 98))
-        attributes = makie(continuous)
+        attributes = makieattributes(continuous)
         @test attributes.plot.colorrange == (2.98, 98.02)
         @test attributes.plot.colormap === continuous.gradient
         @test attributes.colorbar == NamedTuple()
     end
 
     @testset "user keywords override adapter keywords" begin
-        merged = merge(makie(spec).plot, (; colormap = :magma))
+        merged = merge(makieattributes(spec).plot, (; colormap = :magma))
         @test merged.colormap === :magma
         @test merged.colorrange == (2.98, 98.02)
-        @test merge(plots(spec).plot, (; clims = (0.0, 1.0))).clims == (0.0, 1.0)
+        @test merge(plotsattributes(spec).plot, (; clims = (0.0, 1.0))).clims == (0.0, 1.0)
     end
 
     @testset "plots adapter" begin
-        attributes = plots(spec)
+        attributes = plotsattributes(spec)
         @test keys(attributes) == (:plot,)
         @test keys(attributes.plot) == (:clims, :color, :colorbar_ticks)
         @test attributes.plot.clims == (2.98, 98.02)
@@ -60,14 +58,14 @@ include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
 
     @testset "plots adapter of a continuous specification" begin
         continuous = colorspec(z; colorrange = Percentile(2, 98))
-        attributes = plots(continuous)
+        attributes = plotsattributes(continuous)
         @test keys(attributes.plot) == (:clims, :color)
         @test attributes.plot.clims == (2.98, 98.02)
         @test attributes.plot.color === continuous.gradient
     end
 
     @testset "makie renders a figure and a colorbar" begin
-        attributes = makie(spec)
+        attributes = makieattributes(spec)
         figure = Makie.Figure()
         axis = Makie.Axis(figure[1, 1])
         heatmap = Makie.heatmap!(axis, z; attributes.plot...)
@@ -78,7 +76,7 @@ include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
     end
 
     @testset "plots renders a heatmap" begin
-        plot = Plots.heatmap(z; plots(spec).plot...)
+        plot = Plots.heatmap(z; plotsattributes(spec).plot...)
         @test plot isa Plots.Plot
         @test plot[1][:clims] == (2.98, 98.02)
         @test plot[1][:colorbar_ticks][2] == spec.breaks.labels
@@ -91,10 +89,15 @@ include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
         @test Plots.get_clims(plot[1]) == (2.98, 98.02)
     end
 
-    @testset "only the plots adapter clashes with a plotting library" begin
-        @test intersect(names(ColorScales), names(Makie)) == [:plots]
+    @testset "adapter names avoid plotting library collisions" begin
+        @test isempty(intersect(names(ColorScales), names(Makie)))
         @test isempty(intersect(names(ColorScales), names(Plots)))
-        @test plots === ColorScales.plots
+        @test :makieattributes in names(ColorScales)
+        @test :plotsattributes in names(ColorScales)
+        @test !(:makie in names(ColorScales))
+        @test !(:plots in names(ColorScales))
+        @test !isdefined(ColorScales, :makie)
+        @test !isdefined(ColorScales, :plots)
     end
 
     @testset "documented examples run" begin

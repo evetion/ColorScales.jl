@@ -26,7 +26,7 @@ function makie_example()
     elevation[10, 10] = 1.0e6
 
     spec = colorspec(elevation, Quantile(5); colorrange = Percentile(2, 98), colormap = :viridis)
-    attributes = makie(spec)
+    attributes = makieattributes(spec)
 
     figure = Makie.Figure()
     axis = Makie.Axis(figure[1, 1]; title = "Elevation", xlabel = "column", ylabel = "row")

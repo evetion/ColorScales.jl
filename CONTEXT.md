@@ -31,5 +31,7 @@ class edges. A graduated color specification has a categorical gradient.
 ## Plotting adapter
 
 A Makie- or Plots-specific translation of a color specification into keyword
-arguments. An adapter never recomputes the color range or class edges.
+arguments, named `makieattributes` and `plotsattributes` so no adapter name
+collides with a plotting library's exports. An adapter never recomputes the
+color range or class edges.
 

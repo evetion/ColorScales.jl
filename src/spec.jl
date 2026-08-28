@@ -93,17 +93,17 @@ function colorspec(data, method::BreakMethod; colorrange = Extrema(), colormap =
 end
 
 """
-    makie(spec::ColorSpec) -> (; plot, colorbar)
+    makieattributes(spec::ColorSpec) -> (; plot, colorbar)
 
 Makie keyword arguments for `spec`: `plot` for the plotting call and `colorbar`
 for `Colorbar`. Defined by the Makie extension.
 """
-function makie end
+function makieattributes end
 
 """
-    plots(spec::ColorSpec) -> (; plot)
+    plotsattributes(spec::ColorSpec) -> (; plot)
 
 Plots keyword arguments for `spec`: `plot` for the plotting call, including its
 colorbar ticks. Defined by the Plots extension.
 """
-function plots end
+function plotsattributes end
