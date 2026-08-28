@@ -111,6 +111,31 @@ using PlotUtils
         @test extreme[1] <= floatmax(Float64) <= extreme[2]
     end
 
+    @testset "show renders the gradient as colors" begin
+        spec = colorspec(0:100, Quantile(4); colorrange = Percentile(2, 98))
+
+        plain = sprint(show, MIME("text/plain"), spec; context = :color => false)
+        @test occursin("ColorSpec", plain)
+        @test occursin("2.0", plain)
+        @test occursin("98.0", plain)
+        @test occursin("4 classes", plain)
+        @test !occursin("\e[", plain)
+
+        colored = sprint(show, MIME("text/plain"), spec; context = :color => true)
+        @test occursin("\e[38;2;", colored)
+        @test occursin("\e[0m", colored)
+        @test length(colored) > length(plain)
+
+        continuous = colorspec(0:10)
+        continuousplain = sprint(show, MIME("text/plain"), continuous; context = :color => false)
+        @test occursin("continuous", continuousplain)
+        @test !occursin("classes", continuousplain)
+
+        compact = sprint(show, spec)
+        @test occursin("ColorSpec", compact)
+        @test !occursin("\n", compact)
+    end
+
     @testset "collapsed classes still match their gradient" begin
         spec = colorspec([1.0e6, 1.0e6 + 3.0e-10], EqualInterval(10))
         @test nclasses(spec.breaks) == 3

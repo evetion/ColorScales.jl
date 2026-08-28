@@ -120,6 +120,43 @@ function displayrange(bounds::Tuple{Float64, Float64})
     return (max(center - halfwidth, -limit), min(center + halfwidth, limit))
 end
 
+function Base.show(io::IO, spec::ColorSpec)
+    low, high = spec.colorrange
+    print(io, "ColorSpec(", low, ", ", high, ")")
+    if spec.breaks !== nothing
+        print(io, ", ", nclasses(spec.breaks), " classes")
+    end
+end
+
+"""
+    show(io, ::MIME"text/plain", spec::ColorSpec)
+
+Display `spec` as its color range, class count, and its gradient rendered as a
+strip of true-color swatches when `io` supports color.
+"""
+function Base.show(io::IO, ::MIME"text/plain", spec::ColorSpec)
+    low, high = spec.colorrange
+    print(io, "ColorSpec  range (", low, ", ", high, ")")
+    print(io, spec.breaks === nothing ? "  continuous" : "  $(nclasses(spec.breaks)) classes")
+    if get(io, :color, false)
+        println(io)
+        printgradient(io, spec.gradient)
+    end
+    return nothing
+end
+
+function printgradient(io::IO, gradient; width::Int = 40)
+    for t in range(0, 1; length = width)
+        color = convert(PlotUtils.Colors.RGB{Float64}, get(gradient, t))
+        r = round(Int, clamp(color.r, 0, 1) * 255)
+        g = round(Int, clamp(color.g, 0, 1) * 255)
+        b = round(Int, clamp(color.b, 0, 1) * 255)
+        print(io, "\e[38;2;", r, ";", g, ";", b, "m█")
+    end
+    print(io, "\e[0m")
+    return nothing
+end
+
 """
     makieattributes(spec::ColorSpec) -> (; plot, colorbar)
 
