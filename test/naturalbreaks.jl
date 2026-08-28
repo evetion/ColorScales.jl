@@ -72,6 +72,20 @@ end
         )
     end
 
+    @testset "sampling requires an explicit generator" begin
+        @test_throws MethodError RandomSample(5)
+        @test_throws MethodError RandomSample(5; rng = MersenneTwister(1))
+        @test_throws MethodError RandomSample(5, 42)
+        @test fieldnames(RandomSample) == (:size, :rng)
+        @test RandomSample(5, MersenneTwister(1)).rng isa AbstractRNG
+        seeded = MersenneTwister(2024)
+        policy = RandomSample(20, seeded)
+        z = collect(0.0:99.0)
+        method = NaturalBreaks(3; max_unique = 20, sampling = policy)
+        @test breaks(z, method).edges == breaks(z, method).edges
+        @test seeded == MersenneTwister(2024)
+    end
+
     @testset "degenerate data" begin
         @test breaks(fill(4.0, 5), NaturalBreaks(3)).edges == [4.0]
         @test_throws ArgumentError breaks(Float64[], NaturalBreaks(3))
@@ -82,7 +96,7 @@ end
         @test_throws ArgumentError NaturalBreaks(0)
         @test_throws ArgumentError NaturalBreaks(3; max_unique = 0)
         @test_throws ArgumentError RandomSample(0, MersenneTwister(1))
-        @test_throws ArgumentError RandomSample(-5)
+        @test_throws ArgumentError RandomSample(-5, MersenneTwister(1))
         @test NaturalBreaks(3).max_unique == 3000
         @test NaturalBreaks(3).sampling === nothing
         @test RandomSample(10, MersenneTwister(1)).size == 10

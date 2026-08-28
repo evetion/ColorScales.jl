@@ -8,4 +8,5 @@ using ColorScales
     include("databreaks.jl")
     include("naturalbreaks.jl")
     include("spec.jl")
+    include("exports.jl")
 end

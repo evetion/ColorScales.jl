@@ -7,11 +7,10 @@ module ColorScales
 
 using PlotUtils
 using Random
-using Statistics
 
-export Extrema, Percentile, MeanStd, FixedRange, Symmetric, colorrange
+export Extrema, Percentile, MeanStd, FixedRange, SymmetricRange, colorrange
 export Sturges, FreedmanDiaconis, ClassBreaks, nclasses, classcenters
-export EqualInterval, Pretty, FixedInterval, Geometric
+export EqualInterval, Pretty, FixedInterval, GeometricInterval
 export Quantile, StdDev, NaturalBreaks, RandomSample, breaks
 export ColorSpec, classgradient, colorspec
 export makie, plots, classify

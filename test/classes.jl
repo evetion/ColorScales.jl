@@ -73,3 +73,41 @@ end
         @test_throws ArgumentError EqualInterval(:automatic)
     end
 end
+
+@testset "automatic counts ignore observations outside the color range" begin
+    z = collect(0.0:100.0)
+    outliers = vcat(z, fill(1.0e6, 300))
+
+    @testset "sturges clips" begin
+        @test nclasses(breaks(z, EqualInterval(Sturges()); colorrange = (0, 100))) == 8
+        @test nclasses(breaks(outliers, EqualInterval(Sturges()); colorrange = (0, 100))) == 8
+    end
+
+    @testset "freedman-diaconis clips" begin
+        @test nclasses(breaks(z, EqualInterval(FreedmanDiaconis()); colorrange = (0, 100))) == 5
+        @test nclasses(breaks(outliers, EqualInterval(FreedmanDiaconis()); colorrange = (0, 100))) == 5
+    end
+
+    @testset "every break method clips its automatic count" begin
+        clean = collect(1.0:100.0)
+        noisy = vcat(clean, fill(1.0e6, 300))
+        for rule in (Sturges(), FreedmanDiaconis())
+            for method in (EqualInterval, Pretty, GeometricInterval, Quantile, StdDev, NaturalBreaks)
+                expected = nclasses(breaks(clean, method(rule); colorrange = (1, 100)))
+                @test nclasses(breaks(noisy, method(rule); colorrange = (1, 100))) == expected
+            end
+        end
+    end
+
+    @testset "clipped counts still need in-range observations" begin
+        @test_throws ArgumentError breaks(z, EqualInterval(Sturges()); colorrange = FixedRange(200, 300))
+        @test_throws ArgumentError breaks(z, EqualInterval(FreedmanDiaconis()); colorrange = FixedRange(200, 300))
+    end
+
+    @testset "one-shot input is consumed once" begin
+        @test nclasses(breaks(Iterators.Stateful(0.0:100.0), EqualInterval(Sturges()); colorrange = (0, 100))) == 8
+        @test nclasses(
+            breaks(Iterators.Stateful(0.0:100.0), EqualInterval(FreedmanDiaconis()); colorrange = (0, 100))
+        ) == 5
+    end
+end

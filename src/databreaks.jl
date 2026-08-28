@@ -9,8 +9,9 @@ so values outside the range cannot move a class boundary.
 """
     Quantile(count)
 
-Classes holding an equal share of the observations inside the color range. Tied
-observations remove duplicate edges, which can lower the actual class count.
+Classes holding an equal share of the observations inside the color range,
+placed with type-7 linear interpolation. Tied observations remove duplicate
+edges, which can lower the actual class count.
 """
 struct Quantile{C} <: BreakMethod
     count::C
@@ -39,28 +40,13 @@ end
 datarequirement(::Quantile) = REQUIRE_VALUES
 datarequirement(::StdDev) = REQUIRE_VALUES
 
-"""
-    inrange(values, colorrange)
-
-The sorted observations inside the inclusive color range.
-"""
-function inrange(values::AbstractVector{Float64}, colorrange::Tuple{Float64, Float64})
-    low, high = colorrange
-    lowest = searchsortedfirst(values, low)
-    highest = searchsortedlast(values, high)
-    highest < lowest && throw(ArgumentError("no usable observations inside the color range ($low, $high)"))
-    return view(values, lowest:highest)
-end
-
 function breakedges(obs, method::Quantile, colorrange::Tuple{Float64, Float64})
     low, high = colorrange
     low == high && return [low]
     selected = inrange(require_observations(values_of(obs)), colorrange)
     count = resolvecount(method.count, obs, colorrange)
-    edges = [Float64(quantile(selected, i // count; sorted = true)) for i in 0:count]
-    edges[begin] = low
-    edges[end] = high
-    return dedupe(edges)
+    interiors = [quantile7(selected, i, count) for i in 1:(count - 1)]
+    return spanedges(interiors, low, high)
 end
 
 function breakedges(obs, method::StdDev, colorrange::Tuple{Float64, Float64})
@@ -72,8 +58,6 @@ function breakedges(obs, method::StdDev, colorrange::Tuple{Float64, Float64})
     spread == 0 && return [low, high]
     count = resolvecount(method.count, obs, colorrange)
     zedges = prettyedges((low - moments.mean) / spread, (high - moments.mean) / spread, count)
-    edges = moments.mean .+ zedges .* spread
-    edges[begin] = low
-    edges[end] = high
-    return dedupe(edges)
+    interiors = [moments.mean + z * spread for z in view(zedges, 2:(length(zedges) - 1))]
+    return spanedges(interiors, low, high)
 end

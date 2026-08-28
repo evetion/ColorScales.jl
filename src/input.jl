@@ -157,3 +157,43 @@ function stddev(s::DataSummary; corrected::Bool = true)
     denominator <= 0 && return 0.0
     return sqrt(max(s.m2, 0.0) / denominator)
 end
+
+"""
+    inrange(values, colorrange)
+
+The sorted observations inside the inclusive color range.
+"""
+function inrange(values::AbstractVector{Float64}, colorrange::Tuple{Float64, Float64})
+    low, high = colorrange
+    lowest = searchsortedfirst(values, low)
+    highest = searchsortedlast(values, high)
+    highest < lowest && throw(ArgumentError("no usable observations inside the color range ($low, $high)"))
+    return view(values, lowest:highest)
+end
+
+"""
+    quantile7(values, numerator, denominator) -> Float64
+
+Quantile of the sorted `values` at probability `numerator / denominator`, using
+the type-7 linear interpolation shared by `Statistics.quantile` and QGIS.
+
+The probability arrives as a numerator and a denominator so the interpolated
+position `(n - 1) * numerator / denominator` is formed with a single rounding.
+It therefore lands exactly on an observation whenever the exact position is
+integral. Rational probabilities are deliberately avoided: `Statistics.quantile`
+converts them back to `Rational{Int64}` internally, which overflows for ordinary
+sample sizes.
+"""
+function quantile7(values::AbstractVector{Float64}, numerator::Real, denominator::Real)
+    n = length(values)
+    n == 0 && throw(ArgumentError("no usable observations; a quantile requires data"))
+    n == 1 && return values[begin]
+    position = clamp((n - 1) * Float64(numerator) / Float64(denominator), 0.0, Float64(n - 1))
+    below = floor(position)
+    index = Int(below)
+    weight = position - below
+    lower = values[begin + index]
+    weight == 0 && return lower
+    upper = values[begin + min(index + 1, n - 1)]
+    return lower + weight * (upper - lower)
+end

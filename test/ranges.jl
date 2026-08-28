@@ -38,6 +38,24 @@ using ColorScales
         @test_throws ArgumentError colorrange(Float64[], Percentile(2, 98))
     end
 
+    @testset "percentile survives ordinary sample sizes" begin
+        z = collect(0.0:1000.0)
+        @test length(z) == 1001
+        @test colorrange(z, Percentile(2, 98)) == (20.0, 980.0)
+        @test colorrange(z, Percentile(25, 75)) == (250.0, 750.0)
+        wide = collect(0.0:4999.0)
+        @test colorrange(wide, Percentile(2, 98)) == (99.98, 4899.02)
+        @test colorrange(wide, Percentile(1, 99)) == (49.99, 4949.01)
+    end
+
+    @testset "percentile interpolates between observations" begin
+        @test colorrange([0.0, 10.0], Percentile(25, 75)) == (2.5, 7.5)
+        @test colorrange([0.0, 10.0], Percentile(0, 100)) == (0.0, 10.0)
+        @test colorrange([0.0, 10.0], Percentile(50, 50)) == (5.0, 5.0)
+        @test colorrange([0.0, 1.0, 2.0, 3.0], Percentile(30, 70)) == (0.9, 2.1)
+        @test colorrange([0.0, 1.0, 2.0, 3.0], Percentile(2.5, 97.5)) == (0.075, 2.925)
+    end
+
     @testset "mean and standard deviation" begin
         z = [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]
         @test colorrange(z, MeanStd(2; corrected = false)) == (1.0, 9.0)
@@ -61,11 +79,11 @@ using ColorScales
     end
 
     @testset "symmetric" begin
-        @test colorrange([-3.0, 1.0, 2.0], Symmetric(Extrema())) == (-3.0, 3.0)
-        @test colorrange([-3.0, 1.0, 2.0], Symmetric(Extrema(); center = 1)) == (-3.0, 5.0)
-        @test colorrange([1.0, 5.0], Symmetric(FixedRange(1, 5))) == (-5.0, 5.0)
-        @test colorrange(Float64[], Symmetric(FixedRange(1, 5))) == (-5.0, 5.0)
-        @test Symmetric().center == 0.0
+        @test colorrange([-3.0, 1.0, 2.0], SymmetricRange(Extrema())) == (-3.0, 3.0)
+        @test colorrange([-3.0, 1.0, 2.0], SymmetricRange(Extrema(); center = 1)) == (-3.0, 5.0)
+        @test colorrange([1.0, 5.0], SymmetricRange(FixedRange(1, 5))) == (-5.0, 5.0)
+        @test colorrange(Float64[], SymmetricRange(FixedRange(1, 5))) == (-5.0, 5.0)
+        @test SymmetricRange().center == 0.0
     end
 
     @testset "constant data" begin
@@ -73,6 +91,6 @@ using ColorScales
         @test colorrange(z, Extrema()) == (7.0, 7.0)
         @test colorrange(z, Percentile(2, 98)) == (7.0, 7.0)
         @test colorrange(z, MeanStd(3)) == (7.0, 7.0)
-        @test colorrange(z, Symmetric(Extrema(); center = 7)) == (7.0, 7.0)
+        @test colorrange(z, SymmetricRange(Extrema(); center = 7)) == (7.0, 7.0)
     end
 end

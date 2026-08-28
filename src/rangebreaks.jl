@@ -26,6 +26,24 @@ function dedupe(edges::AbstractVector{Float64})
     return unique
 end
 
+"""
+    spanedges(interiors, low, high) -> Vector{Float64}
+
+Class edges that begin exactly at `low` and end exactly at `high`.
+
+Only interior edges strictly inside the color range survive, and tied edges are
+dropped. Generated edges that collapse at the floating-point resolution
+therefore lower the class count instead of producing an invalid sequence.
+"""
+function spanedges(interiors, low::Float64, high::Float64)
+    edges = Float64[low]
+    for e in interiors
+        low < e < high && push!(edges, e)
+    end
+    push!(edges, high)
+    return dedupe(edges)
+end
+
 const NICE_FRACTIONS = (1.0, 2.0, 5.0, 10.0)
 
 """
@@ -86,13 +104,15 @@ function prettyedges(low::Float64, high::Float64, count::Int)
             chosen = interiors
         end
     end
-    return dedupe([low; chosen; high])
+    return spanedges(chosen, low, high)
 end
 
 """
     EqualInterval(count)
 
-Classes of equal width over the color range.
+Classes of equal width over the color range. Edges that coincide at the
+floating-point resolution collapse, so a span too narrow for `count` distinct
+edges yields fewer classes rather than an error.
 """
 struct EqualInterval{C} <: BreakMethod
     count::C
@@ -132,15 +152,15 @@ struct FixedInterval <: BreakMethod
 end
 
 """
-    Geometric(count)
+    GeometricInterval(count)
 
 Logarithmically spaced classes in original data units. The color range must be
 strictly positive. This method does not set a plotting library's color
 transform.
 """
-struct Geometric{C} <: BreakMethod
+struct GeometricInterval{C} <: BreakMethod
     count::C
-    function Geometric(count)
+    function GeometricInterval(count)
         c = checkcount(count)
         return new{typeof(c)}(c)
     end
@@ -148,14 +168,15 @@ end
 
 datarequirement(m::EqualInterval) = datarequirement(m.count)
 datarequirement(m::Pretty) = datarequirement(m.count)
-datarequirement(m::Geometric) = datarequirement(m.count)
+datarequirement(m::GeometricInterval) = datarequirement(m.count)
 datarequirement(::FixedInterval) = REQUIRE_NONE
 
 function breakedges(obs, method::EqualInterval, colorrange::Tuple{Float64, Float64})
     low, high = colorrange
     low == high && return [low]
     count = resolvecount(method.count, obs, colorrange)
-    return collect(range(low, high; length = count + 1))
+    grid = range(low, high; length = count + 1)
+    return spanedges(view(grid, 2:count), low, high)
 end
 
 function breakedges(obs, method::Pretty, colorrange::Tuple{Float64, Float64})
@@ -169,20 +190,17 @@ function breakedges(::Any, method::FixedInterval, colorrange::Tuple{Float64, Flo
     low == high && return [low]
     ratio = (high - low) / method.width
     ratio > 1.0e6 && throw(ArgumentError("FixedInterval($(method.width)) would create more than a million classes over ($low, $high)"))
-    edges = [low + i * method.width for i in 0:floor(Int, ratio)]
-    edges[end] < high ? push!(edges, high) : (edges[end] = high)
-    return dedupe(edges)
+    interiors = [low + i * method.width for i in 1:floor(Int, ratio)]
+    return spanedges(interiors, low, high)
 end
 
-function breakedges(obs, method::Geometric, colorrange::Tuple{Float64, Float64})
+function breakedges(obs, method::GeometricInterval, colorrange::Tuple{Float64, Float64})
     low, high = colorrange
-    low > 0 || throw(ArgumentError("Geometric breaks need a strictly positive color range, got ($low, $high)"))
+    low > 0 || throw(ArgumentError("GeometricInterval breaks need a strictly positive color range, got ($low, $high)"))
     low == high && return [low]
     count = resolvecount(method.count, obs, colorrange)
-    edges = exp.(range(log(low), log(high); length = count + 1))
-    edges[begin] = low
-    edges[end] = high
-    return dedupe(edges)
+    grid = exp.(range(log(low), log(high); length = count + 1))
+    return spanedges(view(grid, 2:count), low, high)
 end
 
 """

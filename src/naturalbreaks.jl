@@ -11,16 +11,19 @@ is why exact work is bounded by `max_unique`.
 """
 
 """
-    RandomSample(size, rng=Random.default_rng())
+    RandomSample(size, rng)
 
 Explicit sampling policy for natural breaks above `max_unique` unique values.
-The generator is copied before use, so a method used twice gives the same
-result.
+
+An `AbstractRNG` is required: there is no default generator, because only a
+caller-supplied one can make the result reproducible. The generator is copied
+before use, so a policy used twice gives the same result and the caller's
+generator is left untouched.
 """
 struct RandomSample
     size::Int
     rng::AbstractRNG
-    function RandomSample(size::Integer, rng::AbstractRNG = Random.default_rng())
+    function RandomSample(size::Integer, rng::AbstractRNG)
         size > 0 || throw(ArgumentError("sample size must be positive, got $size"))
         return new(Int(size), rng)
     end
@@ -154,12 +157,6 @@ function breakedges(obs, method::NaturalBreaks, colorrange::Tuple{Float64, Float
     end
     count = min(resolvecount(method.count, obs, colorrange), length(uniques))
     bounds = fisherjenks(uniques, weights, count)
-    edges = Vector{Float64}(undef, count + 1)
-    edges[begin] = low
-    for class in 2:count
-        start = bounds[class]
-        edges[class] = (uniques[start - 1] + uniques[start]) / 2
-    end
-    edges[end] = high
-    return dedupe(edges)
+    interiors = [(uniques[bounds[class] - 1] + uniques[bounds[class]]) / 2 for class in 2:count]
+    return spanedges(interiors, low, high)
 end

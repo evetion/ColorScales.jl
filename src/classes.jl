@@ -93,7 +93,8 @@ abstract type ClassCountMethod end
 """
     Sturges(; maxclasses=256)
 
-Sturges' rule, `ceil(log2(n)) + 1` classes for `n` observations.
+Sturges' rule, `ceil(log2(n)) + 1` classes for the `n` observations inside the
+selected color range. Observations outside the range cannot change the count.
 """
 struct Sturges <: ClassCountMethod
     maxclasses::Int
@@ -107,7 +108,9 @@ end
     FreedmanDiaconis(; maxclasses=256)
 
 Freedman-Diaconis' rule: class width `2 * IQR / cbrt(n)`, converted to a class
-count over the selected color range. A zero interquartile range gives one class.
+count over the selected color range. Both the interquartile range and `n` come
+from the observations inside that range, so outliers cannot change the count. A
+zero interquartile range gives one class.
 """
 struct FreedmanDiaconis <: ClassCountMethod
     maxclasses::Int
@@ -135,28 +138,29 @@ function checkcount(count)
 end
 
 datarequirement(::Int) = REQUIRE_NONE
-datarequirement(::Sturges) = REQUIRE_SUMMARY
+datarequirement(::Sturges) = REQUIRE_VALUES
 datarequirement(::FreedmanDiaconis) = REQUIRE_VALUES
 
 """
     resolvecount(count, obs, colorrange) -> Int
 
 Resolve a requested class count against the observations and the selected color
-range.
+range. Automatic strategies see only the finite observations inside the
+inclusive color range, so clipped outliers cannot change the class count.
 """
 resolvecount(count::Int, ::Any, ::Tuple{Float64, Float64}) = count
 
-function resolvecount(method::Sturges, obs, ::Tuple{Float64, Float64})
-    s = require_observations(summary_of(obs))
-    return clamp(ceil(Int, log2(s.count)) + 1, 1, method.maxclasses)
+function resolvecount(method::Sturges, obs, colorrange::Tuple{Float64, Float64})
+    selected = inrange(require_observations(values_of(obs)), colorrange)
+    return clamp(ceil(Int, log2(length(selected))) + 1, 1, method.maxclasses)
 end
 
 function resolvecount(method::FreedmanDiaconis, obs, colorrange::Tuple{Float64, Float64})
-    values = require_observations(values_of(obs))
+    selected = inrange(require_observations(values_of(obs)), colorrange)
     span = colorrange[2] - colorrange[1]
-    iqr = quantile(values, 3 // 4; sorted = true) - quantile(values, 1 // 4; sorted = true)
+    iqr = quantile7(selected, 3, 4) - quantile7(selected, 1, 4)
     (iqr > 0 && span > 0) || return 1
-    ratio = span / (2 * iqr / cbrt(length(values)))
+    ratio = span / (2 * iqr / cbrt(length(selected)))
     ratio >= method.maxclasses && return method.maxclasses
     return max(ceil(Int, ratio), 1)
 end

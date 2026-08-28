@@ -24,7 +24,7 @@ struct Extrema <: ColorRangeMethod end
     Percentile(low, high)
 
 Color range between two percentiles on the inclusive `0` to `100` scale, using
-`Statistics.quantile` and its default type-7 linear interpolation.
+type-7 linear interpolation, the convention of `Statistics.quantile` and QGIS.
 """
 struct Percentile <: ColorRangeMethod
     low::Float64
@@ -71,14 +71,14 @@ struct FixedRange <: ColorRangeMethod
 end
 
 """
-    Symmetric(method=Extrema(); center=0)
+    SymmetricRange(method=Extrema(); center=0)
 
 Widen `method`'s range to the interval of equal width on both sides of `center`.
 """
-struct Symmetric{M <: ColorRangeMethod} <: ColorRangeMethod
+struct SymmetricRange{M <: ColorRangeMethod} <: ColorRangeMethod
     method::M
     center::Float64
-    function Symmetric(method::M = Extrema(); center::Real = 0) where {M <: ColorRangeMethod}
+    function SymmetricRange(method::M = Extrema(); center::Real = 0) where {M <: ColorRangeMethod}
         c = Float64(center)
         isfinite(c) || throw(ArgumentError("symmetric center must be finite, got $center"))
         return new{M}(method, c)
@@ -89,17 +89,8 @@ datarequirement(::Extrema) = REQUIRE_SUMMARY
 datarequirement(::Percentile) = REQUIRE_VALUES
 datarequirement(::MeanStd) = REQUIRE_SUMMARY
 datarequirement(::FixedRange) = REQUIRE_NONE
-datarequirement(m::Symmetric) = datarequirement(m.method)
+datarequirement(m::SymmetricRange) = datarequirement(m.method)
 datarequirement(::Tuple{Float64, Float64}) = REQUIRE_NONE
-
-"""
-    probability(percent) -> Real
-
-Convert a percentile on the `0` to `100` scale to a probability. Integral
-percentiles become exact rationals, so type-7 interpolation lands exactly on an
-observation when it should.
-"""
-probability(percent::Float64) = isinteger(percent) ? Int(percent) // 100 : percent / 100
 
 """
     checkrange(bounds) -> Tuple{Float64,Float64}
@@ -130,9 +121,9 @@ end
 
 function rangefrom(obs, m::Percentile)
     values = require_observations(values_of(obs))
-    low = quantile(values, probability(m.low); sorted = true)
-    high = quantile(values, probability(m.high); sorted = true)
-    return (Float64(low), Float64(high))
+    low = quantile7(values, m.low, 100)
+    high = quantile7(values, m.high, 100)
+    return (low, high)
 end
 
 function rangefrom(obs, m::MeanStd)
@@ -143,7 +134,7 @@ end
 
 rangefrom(::Any, m::FixedRange) = (m.low, m.high)
 
-function rangefrom(obs, m::Symmetric)
+function rangefrom(obs, m::SymmetricRange)
     low, high = rangefrom(obs, m.method)
     radius = max(abs(low - m.center), abs(high - m.center))
     return (m.center - radius, m.center + radius)

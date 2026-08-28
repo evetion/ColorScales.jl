@@ -22,7 +22,13 @@ end
     classgradient(colormap, classes; colorrange) -> PlotUtils.CategoricalColorGradient
 
 Categorical gradient whose stops are `classes`' edges normalized to
-`colorrange`. Constant classes give a one-color gradient.
+`colorrange`. The gradient always holds exactly `nclasses(classes)` colors.
+
+Except for constant classes, the edges must span `colorrange` exactly: the
+first edge has to equal its lower endpoint and the last edge its upper one.
+Edges that fall short of or reach past the color range raise an
+`ArgumentError` instead of being silently clamped onto a different class count.
+Constant classes give a one-color gradient.
 
 ```jldoctest
 julia> classgradient(:viridis, ClassBreaks([0.0, 1.0, 3.0]); colorrange = (0, 3)).values
@@ -35,9 +41,16 @@ julia> classgradient(:viridis, ClassBreaks([0.0, 1.0, 3.0]); colorrange = (0, 3)
 function classgradient(colormap, classes::ClassBreaks; colorrange)
     low, high = checkrange(colorrange)
     edges = classes.edges
-    (length(edges) == 1 || high <= low) && return cgrad(colormap, [0.0, 1.0]; categorical = true)
-    stops = dedupe(clamp.((edges .- low) ./ (high - low), 0.0, 1.0))
-    length(stops) == 1 && return cgrad(colormap, [0.0, 1.0]; categorical = true)
+    length(edges) == 1 && return cgrad(colormap, [0.0, 1.0]; categorical = true)
+    (first(edges) == low && last(edges) == high) || throw(
+        ArgumentError(
+            "class edges must span the color range exactly; got edges ($(first(edges)), $(last(edges))) " *
+                "over the color range ($low, $high)"
+        )
+    )
+    stops = (edges .- low) ./ (high - low)
+    stops[begin] = 0.0
+    stops[end] = 1.0
     return cgrad(colormap, stops; categorical = true)
 end
 

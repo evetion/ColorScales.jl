@@ -33,17 +33,29 @@ using ColorScales
     end
 
     @testset "geometric" begin
-        @test breaks(1:1000, Geometric(3)).edges ≈ [1.0, 10.0, 100.0, 1000.0]
-        @test breaks(1:1000, Geometric(3)).edges[1] == 1.0
-        @test breaks(1:1000, Geometric(3)).edges[end] == 1000.0
-        @test_throws ArgumentError breaks(0:100, Geometric(3))
-        @test_throws ArgumentError breaks(-5:100, Geometric(3))
-        @test_throws ArgumentError breaks(1:1000, Geometric(3); colorrange = FixedRange(-1, 10))
+        @test breaks(1:1000, GeometricInterval(3)).edges ≈ [1.0, 10.0, 100.0, 1000.0]
+        @test breaks(1:1000, GeometricInterval(3)).edges[1] == 1.0
+        @test breaks(1:1000, GeometricInterval(3)).edges[end] == 1000.0
+        @test_throws ArgumentError breaks(0:100, GeometricInterval(3))
+        @test_throws ArgumentError breaks(-5:100, GeometricInterval(3))
+        @test_throws ArgumentError breaks(1:1000, GeometricInterval(3); colorrange = FixedRange(-1, 10))
+    end
+
+    @testset "equal interval degrades at the float resolution" begin
+        cb = breaks([1.0e6, 1.0e6 + 3.0e-10], EqualInterval(10))
+        @test cb isa ClassBreaks
+        @test nclasses(cb) >= 1
+        @test cb.edges[begin] == 1.0e6
+        @test cb.edges[end] == 1.0e6 + 3.0e-10
+        @test issorted(cb.edges)
+        @test allunique(cb.edges)
+        @test length(cb.edges) < 11
+        @test nclasses(breaks([1.0e16, nextfloat(1.0e16)], EqualInterval(8))) == 1
     end
 
     @testset "constant data collapses" begin
         z = fill(3.0, 5)
-        for method in (EqualInterval(4), Pretty(4), FixedInterval(2), Geometric(4))
+        for method in (EqualInterval(4), Pretty(4), FixedInterval(2), GeometricInterval(4))
             cb = breaks(z, method)
             @test cb.edges == [3.0]
             @test nclasses(cb) == 1
@@ -75,7 +87,7 @@ using ColorScales
         @test_throws ArgumentError EqualInterval(0)
         @test_throws ArgumentError EqualInterval(-2)
         @test_throws ArgumentError Pretty(0)
-        @test_throws ArgumentError Geometric(0)
+        @test_throws ArgumentError GeometricInterval(0)
         @test_throws ArgumentError FixedInterval(0)
         @test_throws ArgumentError FixedInterval(-1)
         @test_throws ArgumentError FixedInterval(Inf)

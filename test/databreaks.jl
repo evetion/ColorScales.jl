@@ -10,6 +10,21 @@ using ColorScales
         @test nclasses(breaks(z, Quantile(Sturges()))) == 8
     end
 
+    @testset "quantile survives ordinary sample sizes" begin
+        z = collect(0.0:999.0)
+        @test length(z) == 1000
+        cb = breaks(z, Quantile(7))
+        @test nclasses(cb) == 7
+        @test cb.edges[begin] == 0.0
+        @test cb.edges[end] == 999.0
+        @test cb.edges ≈ [
+            0.0, 142.71428571428572, 285.42857142857144, 428.14285714285717,
+            570.8571428571429, 713.5714285714286, 856.2857142857143, 999.0,
+        ]
+        @test issorted(cb.edges)
+        @test nclasses(breaks(collect(0.0:1000.0), Quantile(3))) == 3
+    end
+
     @testset "quantile uses only in-range observations" begin
         z = collect(0.0:100.0)
         @test breaks(z, Quantile(4); colorrange = Percentile(20, 80)).edges == [20.0, 35.0, 50.0, 65.0, 80.0]
