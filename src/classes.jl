@@ -72,95 +72,15 @@ function classcenters(classes::ClassBreaks)
 end
 
 """
-    classindex(classes::ClassBreaks, x) -> Int
+    checkcount(count) -> Int
 
-Index of the class holding `x`. Values below or above the class edges saturate
-on the first and last class, and a value exactly on an interior edge belongs to
-the lower class.
-"""
-function classindex(classes::ClassBreaks, x::Real)
-    return clamp(searchsortedfirst(classes.edges, x) - 1, 1, nclasses(classes))
-end
-
-"""
-    ClassCountMethod
-
-Supertype of the automatic class-count strategies. Counts are clamped to
-`maxclasses` so a strategy cannot create an impractical gradient.
-"""
-abstract type ClassCountMethod end
-
-"""
-    Sturges(; maxclasses=256)
-
-Sturges' rule, `ceil(log2(n)) + 1` classes for the `n` observations inside the
-selected color range. Observations outside the range cannot change the count.
-"""
-struct Sturges <: ClassCountMethod
-    maxclasses::Int
-    function Sturges(; maxclasses::Integer = 256)
-        maxclasses >= 1 || throw(ArgumentError("maxclasses must be positive, got $maxclasses"))
-        return new(Int(maxclasses))
-    end
-end
-
-"""
-    FreedmanDiaconis(; maxclasses=256)
-
-Freedman-Diaconis' rule: class width `2 * IQR / cbrt(n)`, converted to a class
-count over the selected color range. Both the interquartile range and `n` come
-from the observations inside that range, so outliers cannot change the count. A
-zero interquartile range gives one class.
-"""
-struct FreedmanDiaconis <: ClassCountMethod
-    maxclasses::Int
-    function FreedmanDiaconis(; maxclasses::Integer = 256)
-        maxclasses >= 1 || throw(ArgumentError("maxclasses must be positive, got $maxclasses"))
-        return new(Int(maxclasses))
-    end
-end
-
-"""
-    checkcount(count)
-
-Validate a requested class count: a positive `Integer` or a
-[`ClassCountMethod`](@ref).
+Validate a requested class count: a positive `Integer`.
 """
 function checkcount(count::Integer)
     count > 0 || throw(ArgumentError("class count must be positive, got $count"))
     return Int(count)
 end
 
-checkcount(count::ClassCountMethod) = count
-
 function checkcount(count)
-    throw(ArgumentError("class count must be a positive integer or a count strategy, got $(typeof(count))"))
-end
-
-datarequirement(::Int) = REQUIRE_NONE
-datarequirement(::Sturges) = REQUIRE_VALUES
-datarequirement(::FreedmanDiaconis) = REQUIRE_VALUES
-
-"""
-    resolvecount(count, obs, colorrange) -> Int
-
-Resolve a requested class count against the observations and the selected color
-range. Automatic strategies see only the finite observations inside the
-inclusive color range, so clipped outliers cannot change the class count.
-"""
-resolvecount(count::Int, ::Any, ::Tuple{Float64, Float64}) = count
-
-function resolvecount(method::Sturges, obs, colorrange::Tuple{Float64, Float64})
-    selected = inrange(require_observations(values_of(obs)), colorrange)
-    return clamp(ceil(Int, log2(length(selected))) + 1, 1, method.maxclasses)
-end
-
-function resolvecount(method::FreedmanDiaconis, obs, colorrange::Tuple{Float64, Float64})
-    selected = inrange(require_observations(values_of(obs)), colorrange)
-    span = colorrange[2] - colorrange[1]
-    iqr = quantile7(selected, 3, 4) - quantile7(selected, 1, 4)
-    (iqr > 0 && span > 0) || return 1
-    ratio = span / (2 * iqr / cbrt(length(selected)))
-    ratio >= method.maxclasses && return method.maxclasses
-    return max(ceil(Int, ratio), 1)
+    throw(ArgumentError("class count must be a positive integer, got $(typeof(count))"))
 end

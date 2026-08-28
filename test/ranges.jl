@@ -78,19 +78,10 @@ using ColorScales
         @test_throws ArgumentError FixedRange(0, Inf)
     end
 
-    @testset "symmetric" begin
-        @test colorrange([-3.0, 1.0, 2.0], SymmetricRange(Extrema())) == (-3.0, 3.0)
-        @test colorrange([-3.0, 1.0, 2.0], SymmetricRange(Extrema(); center = 1)) == (-3.0, 5.0)
-        @test colorrange([1.0, 5.0], SymmetricRange(FixedRange(1, 5))) == (-5.0, 5.0)
-        @test colorrange(Float64[], SymmetricRange(FixedRange(1, 5))) == (-5.0, 5.0)
-        @test SymmetricRange().center == 0.0
-    end
-
     @testset "constant data" begin
         z = fill(7.0, 4)
         @test colorrange(z, Extrema()) == (7.0, 7.0)
         @test colorrange(z, Percentile(2, 98)) == (7.0, 7.0)
         @test colorrange(z, MeanStd(3)) == (7.0, 7.0)
-        @test colorrange(z, SymmetricRange(Extrema(); center = 7)) == (7.0, 7.0)
     end
 end

@@ -87,10 +87,7 @@ using PlotUtils
 
     @testset "every break method yields a gradient with one color per class" begin
         z = collect(0.0:100.0)
-        for method in (
-                EqualInterval(4), Pretty(5), FixedInterval(30), GeometricInterval(4),
-                Quantile(4), StdDev(4), NaturalBreaks(4),
-            )
+        for method in (EqualInterval(4), Pretty(5), Quantile(4))
             spec = colorspec(z, method; colorrange = FixedRange(1, 100))
             @test length(spec.gradient.colors) == nclasses(spec.breaks)
             @test spec.breaks.edges[begin] == spec.colorrange[1]
@@ -107,12 +104,5 @@ using PlotUtils
         narrow = colorspec([1.0e16, nextfloat(1.0e16)], EqualInterval(8))
         @test nclasses(narrow.breaks) == 1
         @test length(narrow.gradient.colors) == 1
-    end
-
-    @testset "extension hooks exist without methods" begin
-        for hook in (makie, plots, classify)
-            @test hook isa Function
-            @test isempty(methods(hook))
-        end
     end
 end

@@ -6,7 +6,7 @@ using ColorScales
     include("classes.jl")
     include("rangebreaks.jl")
     include("databreaks.jl")
-    include("naturalbreaks.jl")
     include("spec.jl")
     include("exports.jl")
+    include("integration.jl")
 end

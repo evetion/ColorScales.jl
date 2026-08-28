@@ -1,28 +1,31 @@
 using Test
 using ColorScales
-using LinearAlgebra
-using Distributions
 
-@testset "public names avoid ecosystem collisions" begin
-    @testset "renamed names stay unambiguous" begin
-        @test SymmetricRange <: ColorScales.ColorRangeMethod
-        @test GeometricInterval <: ColorScales.BreakMethod
-        @test SymmetricRange === ColorScales.SymmetricRange
-        @test GeometricInterval === ColorScales.GeometricInterval
-        @test colorrange([-3.0, 1.0, 2.0], SymmetricRange()) == (-3.0, 3.0)
-        @test breaks(1:1000, GeometricInterval(3)).edges ≈ [1.0, 10.0, 100.0, 1000.0]
+@testset "public surface" begin
+    @testset "exports are exactly the documented set" begin
+        expected = [
+            :ClassBreaks, :ColorScales, :ColorSpec, :EqualInterval, :Extrema,
+            :FixedRange, :MeanStd, :Percentile, :Pretty, :Quantile,
+            :breaks, :classcenters, :classgradient, :colorrange, :colorspec,
+            :makie, :nclasses, :plots,
+        ]
+        @test sort(names(ColorScales)) == sort(expected)
     end
 
-    @testset "colliding names belong to their owners" begin
-        @test Symmetric === LinearAlgebra.Symmetric
-        @test Geometric === Distributions.Geometric
-        @test !(:Symmetric in names(ColorScales))
-        @test !(:Geometric in names(ColorScales))
+    @testset "every export is documented" begin
+        documented = Base.Docs.meta(ColorScales)
+        for name in setdiff(names(ColorScales), [:ColorScales])
+            @test haskey(documented, Base.Docs.Binding(ColorScales, name))
+        end
     end
 
-    @testset "no exported name collides with LinearAlgebra or Distributions" begin
-        ours = setdiff(names(ColorScales), [:ColorScales])
-        theirs = union(Set(names(LinearAlgebra)), Set(names(Distributions)))
-        @test isempty(intersect(Set(ours), theirs))
+    @testset "range methods are callable" begin
+        for method in (Extrema(), Percentile(2, 98), MeanStd(2), FixedRange(0, 1))
+            @test method isa ColorScales.ColorRangeMethod
+            @test method isa Function
+        end
+        for method in (EqualInterval(3), Quantile(3), Pretty(3))
+            @test method isa ColorScales.BreakMethod
+        end
     end
 end

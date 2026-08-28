@@ -6,21 +6,18 @@ readable class breaks for both Makie and Plots.
 module ColorScales
 
 using PlotUtils
-using Random
 
-export Extrema, Percentile, MeanStd, FixedRange, SymmetricRange, colorrange
-export Sturges, FreedmanDiaconis, ClassBreaks, nclasses, classcenters
-export EqualInterval, Pretty, FixedInterval, GeometricInterval
-export Quantile, StdDev, NaturalBreaks, RandomSample, breaks
+export Extrema, Percentile, MeanStd, FixedRange, colorrange
+export ClassBreaks, nclasses, classcenters
+export EqualInterval, Quantile, Pretty, breaks
 export ColorSpec, classgradient, colorspec
-export makie, plots, classify
+export makie, plots
 
 include("input.jl")
 include("ranges.jl")
 include("classes.jl")
 include("rangebreaks.jl")
 include("databreaks.jl")
-include("naturalbreaks.jl")
 include("spec.jl")
 
 end

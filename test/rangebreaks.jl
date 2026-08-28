@@ -25,22 +25,6 @@ using ColorScales
         @test breaks([0.0, 1.0], Pretty(2)).edges == [0.0, 0.5, 1.0]
     end
 
-    @testset "fixed interval" begin
-        @test breaks(0:10, FixedInterval(4)).edges == [0.0, 4.0, 8.0, 10.0]
-        @test breaks(0:10, FixedInterval(5)).edges == [0.0, 5.0, 10.0]
-        @test nclasses(breaks(0:10, FixedInterval(4))) == 3
-        @test breaks(0:10, FixedInterval(20)).edges == [0.0, 10.0]
-    end
-
-    @testset "geometric" begin
-        @test breaks(1:1000, GeometricInterval(3)).edges ≈ [1.0, 10.0, 100.0, 1000.0]
-        @test breaks(1:1000, GeometricInterval(3)).edges[1] == 1.0
-        @test breaks(1:1000, GeometricInterval(3)).edges[end] == 1000.0
-        @test_throws ArgumentError breaks(0:100, GeometricInterval(3))
-        @test_throws ArgumentError breaks(-5:100, GeometricInterval(3))
-        @test_throws ArgumentError breaks(1:1000, GeometricInterval(3); colorrange = FixedRange(-1, 10))
-    end
-
     @testset "equal interval degrades at the float resolution" begin
         cb = breaks([1.0e6, 1.0e6 + 3.0e-10], EqualInterval(10))
         @test cb isa ClassBreaks
@@ -55,7 +39,7 @@ using ColorScales
 
     @testset "constant data collapses" begin
         z = fill(3.0, 5)
-        for method in (EqualInterval(4), Pretty(4), FixedInterval(2), GeometricInterval(4))
+        for method in (EqualInterval(4), Pretty(4), Quantile(4))
             cb = breaks(z, method)
             @test cb.edges == [3.0]
             @test nclasses(cb) == 1
@@ -65,7 +49,7 @@ using ColorScales
     @testset "fixed color range without observations" begin
         @test breaks(Float64[], EqualInterval(2); colorrange = FixedRange(0, 10)).edges == [0.0, 5.0, 10.0]
         @test breaks((), EqualInterval(2); colorrange = (0, 10)).edges == [0.0, 5.0, 10.0]
-        @test breaks([missing], FixedInterval(4); colorrange = FixedRange(0, 10)).edges == [0.0, 4.0, 8.0, 10.0]
+        @test breaks([missing], Pretty(2); colorrange = FixedRange(0, 10)).edges == [0.0, 5.0, 10.0]
     end
 
     @testset "explicit color ranges" begin
@@ -87,17 +71,13 @@ using ColorScales
         @test_throws ArgumentError EqualInterval(0)
         @test_throws ArgumentError EqualInterval(-2)
         @test_throws ArgumentError Pretty(0)
-        @test_throws ArgumentError GeometricInterval(0)
-        @test_throws ArgumentError FixedInterval(0)
-        @test_throws ArgumentError FixedInterval(-1)
-        @test_throws ArgumentError FixedInterval(Inf)
         @test_throws ArgumentError EqualInterval(2.5)
+        @test_throws ArgumentError EqualInterval(:automatic)
     end
 end
 
 @testset "one-shot iterables" begin
     @test breaks(Iterators.Stateful(0.0:10.0), EqualInterval(2)).edges == [0.0, 5.0, 10.0]
-    @test nclasses(breaks(Iterators.Stateful(0.0:10.0), EqualInterval(Sturges()))) == 5
-    @test nclasses(breaks(Iterators.Stateful(0.0:10.0), EqualInterval(FreedmanDiaconis()))) == 3
+    @test breaks(Iterators.Stateful(0.0:10.0), Quantile(2)).edges == [0.0, 5.0, 10.0]
     @test colorrange(Iterators.Stateful(0.0:10.0), Percentile(0, 100)) == (0.0, 10.0)
 end

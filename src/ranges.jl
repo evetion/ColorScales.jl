@@ -70,26 +70,10 @@ struct FixedRange <: ColorRangeMethod
     end
 end
 
-"""
-    SymmetricRange(method=Extrema(); center=0)
-
-Widen `method`'s range to the interval of equal width on both sides of `center`.
-"""
-struct SymmetricRange{M <: ColorRangeMethod} <: ColorRangeMethod
-    method::M
-    center::Float64
-    function SymmetricRange(method::M = Extrema(); center::Real = 0) where {M <: ColorRangeMethod}
-        c = Float64(center)
-        isfinite(c) || throw(ArgumentError("symmetric center must be finite, got $center"))
-        return new{M}(method, c)
-    end
-end
-
 datarequirement(::Extrema) = REQUIRE_SUMMARY
 datarequirement(::Percentile) = REQUIRE_VALUES
 datarequirement(::MeanStd) = REQUIRE_SUMMARY
 datarequirement(::FixedRange) = REQUIRE_NONE
-datarequirement(m::SymmetricRange) = datarequirement(m.method)
 datarequirement(::Tuple{Float64, Float64}) = REQUIRE_NONE
 
 """
@@ -133,12 +117,6 @@ function rangefrom(obs, m::MeanStd)
 end
 
 rangefrom(::Any, m::FixedRange) = (m.low, m.high)
-
-function rangefrom(obs, m::SymmetricRange)
-    low, high = rangefrom(obs, m.method)
-    radius = max(abs(low - m.center), abs(high - m.center))
-    return (m.center - radius, m.center + radius)
-end
 
 """
     colorrange(data, method=Extrema(); invalid=:skip) -> Tuple{Float64,Float64}
