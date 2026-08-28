@@ -201,6 +201,23 @@ julia> colorrange(z, Percentile(2, 98))
 Class edges of data-based methods come only from observations inside the color
 range, so a clipped outlier cannot move a class boundary either.
 
+## Documentation
+
+The [docs](docs) folder holds a visual [Documenter](https://documenter.juliadocs.org)
+site: one page per color range method, one per graduated-class method, and one
+each for the Makie and Plots workflows, all shown on the same synthetic raster
+and scattered points. Build it locally with:
+
+```julia
+using Pkg
+Pkg.activate("docs")
+Pkg.develop(path = ".")
+Pkg.instantiate()
+include("docs/make.jl")
+```
+
+Open `docs/build/index.html` in a browser.
+
 ## Scope
 
 This release is deliberately small: four color ranges, three graduated methods,
