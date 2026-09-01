@@ -1,0 +1,30 @@
+name = "ColorScales"
+uuid = "31aba9d7-1b70-4d4a-aefa-a818fd040592"
+authors = ["ColorScales contributors"]
+version = "0.1.0"
+
+[deps]
+PlotUtils = "995b91a9-d308-5afd-9ec6-746e21dbc043"
+
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+
+[extensions]
+ColorScalesMakieExt = "Makie"
+ColorScalesPlotsExt = "Plots"
+
+[compat]
+Makie = "0.24"
+PlotUtils = "1"
+Plots = "1"
+Test = "1"
+julia = "1.10"
+
+[extras]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Makie", "Plots", "Test"]
