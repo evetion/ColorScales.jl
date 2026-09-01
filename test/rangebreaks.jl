@@ -81,6 +81,12 @@ using ColorScales
         @test_throws ArgumentError EqualInterval(2.5)
         @test_throws ArgumentError EqualInterval(:automatic)
     end
+
+    @testset "break methods are callable" begin
+        @test EqualInterval(2)(0:100).edges == breaks(0:100, EqualInterval(2)).edges
+        @test EqualInterval(2)(0:100; colorrange = (0, 200)).edges == [0.0, 100.0, 200.0]
+        @test Pretty(5)(3:97).edges == breaks(3:97, Pretty(5)).edges
+    end
 end
 
 @testset "one-shot iterables" begin

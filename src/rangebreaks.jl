@@ -11,7 +11,9 @@ bounds, and the widened bounds become the color range downstream.
 """
     BreakMethod
 
-Supertype of the class-break methods consumed by [`breaks`](@ref).
+Supertype of the class-break methods consumed by [`breaks`](@ref). Every
+method is callable, so `EqualInterval(4)(z)` is shorthand for
+`breaks(z, EqualInterval(4))`.
 """
 abstract type BreakMethod end
 
@@ -174,3 +176,6 @@ function breaks(data, method::BreakMethod; colorrange = Extrema(), invalid = :sk
     obs = observe(data, requirement; invalid = policy)
     return ClassBreaks(breakedges(obs, method, rangefrom(obs, selected)))
 end
+
+(method::BreakMethod)(data; colorrange = Extrema(), invalid = :skip) =
+    breaks(data, method; colorrange = colorrange, invalid = invalid)

@@ -79,6 +79,19 @@ using PlotUtils
         @test spec.gradient.values ≈ [0.0, 0.5, 1.0]
     end
 
+    @testset "core accessors" begin
+        z = collect(0.0:100.0)
+        graduated = colorspec(z, Quantile(4); colorrange = Percentile(2, 98))
+        @test colorrange(graduated) == graduated.colorrange
+        @test colorgradient(graduated) === graduated.gradient
+        @test classticks(graduated) == (classcenters(graduated.breaks), graduated.breaks.labels)
+
+        continuous = colorspec(0:10)
+        @test colorrange(continuous) == continuous.colorrange
+        @test colorgradient(continuous) === continuous.gradient
+        @test classticks(continuous) === nothing
+    end
+
     @testset "constant graduated specification" begin
         spec = colorspec(fill(4.0, 5), Quantile(4))
         @test spec.colorrange == (4.0, 4.0)

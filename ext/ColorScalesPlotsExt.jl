@@ -16,11 +16,10 @@ A constant color range is widened to renderer-safe display limits around its
 value; `spec.colorrange` itself stays exact.
 """
 function ColorScales.plotsattributes(spec::ColorSpec)
-    clims = ColorScales.displayrange(spec.colorrange)
-    classes = spec.breaks
-    classes === nothing && return (; plot = (; clims = clims, color = spec.gradient))
-    ticks = (classcenters(classes), classes.labels)
-    return (; plot = (; clims = clims, color = spec.gradient, colorbar_ticks = ticks))
+    clims = ColorScales.displayrange(colorrange(spec))
+    ticks = classticks(spec)
+    ticks === nothing && return (; plot = (; clims = clims, color = colorgradient(spec)))
+    return (; plot = (; clims = clims, color = colorgradient(spec), colorbar_ticks = ticks))
 end
 
 end

@@ -78,6 +78,14 @@ include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
         @test collect(heatmap.colorrange[]) ≈ [2.98, 98.02]
     end
 
+    @testset "makie accepts a ColorSpec directly as colormap and colorrange" begin
+        figure = Makie.Figure()
+        axis = Makie.Axis(figure[1, 1])
+        heatmap = Makie.heatmap!(axis, z; colormap = spec, colorrange = spec)
+        @test collect(heatmap.colorrange[]) ≈ [2.98, 98.02]
+        @test heatmap.colormap[] === spec.gradient
+    end
+
     @testset "plots renders a heatmap" begin
         plot = Plots.heatmap(z; plotsattributes(spec).plot...)
         @test plot isa Plots.Plot

@@ -125,6 +125,34 @@ function displayrange(bounds::Tuple{Float64, Float64})
     return (max(center - halfwidth, -limit), min(center + halfwidth, limit))
 end
 
+"""
+    colorrange(spec::ColorSpec) -> Tuple{Float64,Float64}
+
+`spec`'s color range, exactly as [`colorspec`](@ref) computed it.
+"""
+colorrange(spec::ColorSpec) = spec.colorrange
+
+"""
+    colorgradient(spec::ColorSpec) -> PlotUtils.ColorGradient
+
+`spec`'s gradient: categorical for a graduated specification, continuous for
+one without class breaks.
+"""
+colorgradient(spec::ColorSpec) = spec.gradient
+
+"""
+    classticks(spec::ColorSpec) -> Union{Nothing, Tuple}
+
+Class-centered tick positions and labels for `spec`'s colorbar: `nothing` for
+a continuous specification, whose colorbar needs no override, and
+`(classcenters(spec.breaks), spec.breaks.labels)` for a graduated one.
+"""
+function classticks(spec::ColorSpec)
+    classes = spec.breaks
+    classes === nothing && return nothing
+    return (classcenters(classes), classes.labels)
+end
+
 function Base.show(io::IO, spec::ColorSpec)
     low, high = spec.colorrange
     print(io, "ColorSpec(", low, ", ", high, ")")
