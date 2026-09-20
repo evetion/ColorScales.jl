@@ -5,9 +5,9 @@ robust color ranges, interpretable graduated classes, and one gradient that
 [Makie](https://docs.makie.org) and [Plots](https://docs.juliaplots.org) both
 understand.
 
-ColorScales computes colors. It never plots — the [Makie](@ref) and
-[Plots](@ref) pages show how thin adapters turn a specification into keyword
-arguments for your own plotting call.
+ColorScales computes colors. It never plots — it hands a specification to your
+own plotting call as its last argument, and the [Makie](@ref) and [Plots](@ref)
+pages show that one rule at work.
 
 ## Data used throughout these docs
 
@@ -22,8 +22,9 @@ this package is built for.
     raster and on the points.
   - [Graduated classes](@ref): the three `breaks` methods, discretizing the
     same data into labelled classes.
-  - [Makie](@ref) and [Plots](@ref): the full `colorspec` → adapter workflow
-    for heatmaps and scatter plots in each renderer.
+  - [Makie](@ref) and [Plots](@ref): the full `colorspec` workflow for heatmaps
+    and scatter plots in each renderer, one scale across panels, and the
+    shorthand that needs no specification at all.
 
 ## Installation
 

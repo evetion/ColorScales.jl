@@ -84,11 +84,15 @@ using PlotUtils
         graduated = colorspec(z, Quantile(4); colorrange = Percentile(2, 98))
         @test colorrange(graduated) == graduated.colorrange
         @test colorgradient(graduated) === graduated.gradient
+        @test classbreaks(graduated) === graduated.breaks
+        @test nclasses(graduated) == nclasses(graduated.breaks) == 4
         @test classticks(graduated) == (classcenters(graduated.breaks), graduated.breaks.labels)
 
         continuous = colorspec(0:10)
         @test colorrange(continuous) == continuous.colorrange
         @test colorgradient(continuous) === continuous.gradient
+        @test classbreaks(continuous) === nothing
+        @test nclasses(continuous) == 0
         @test classticks(continuous) === nothing
     end
 

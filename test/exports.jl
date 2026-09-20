@@ -6,8 +6,8 @@ using ColorScales
         expected = [
             :ClassBreaks, :ColorScales, :ColorSpec, :EqualInterval, :Extrema,
             :FixedRange, :MeanStd, :Percentile, :Pretty, :Quantile,
-            :breaks, :classcenters, :classgradient, :classticks, :colorgradient,
-            :colorrange, :colorspec, :makieattributes, :nclasses, :plotsattributes,
+            :breaks, :classbreaks, :classcenters, :classgradient, :classticks,
+            :colorgradient, :colorrange, :colorspec, :nclasses,
         ]
         @test sort(names(ColorScales)) == sort(expected)
     end

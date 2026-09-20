@@ -1,7 +1,7 @@
 # ColorScales.jl Plotting API Redesign
 
 **Date:** 2026-09-20
-**Status:** Approved design; implementation pending
+**Status:** Implemented
 **Supersedes:** the plotting-adapter section of
 [`2026-08-27-color-scales-design.md`](2026-08-27-color-scales-design.md)
 
@@ -162,24 +162,24 @@ model, documented as "pass it to both keywords or to neither".
 ## Plots extension
 
 ```julia
-@recipe function f(values::AbstractArray{<:Union{Real, Missing}}, spec::ColorSpec)
+@recipe function f(values::ColoredValues, spec::ColorSpec)
     seriestype --> :heatmap
-    colorattributes!(plotattributes, spec)
-    return (values,)
+    return colorseries!(plotattributes, (), values, spec, seriestypeof(plotattributes))
 end
 
-@recipe function f(x, y, values, spec::ColorSpec)
-    colorattributes!(plotattributes, spec)
-    seriestype = get(plotattributes, :seriestype, :heatmap)
-    RecipesPipeline.is_surface(seriestype) && return (x, y, values)
-    Plots.like_line(seriestype) ? (line_z := values) : (marker_z := values)
-    return (x, y)
+@recipe function f(x, y, values::ColoredValues, spec::ColorSpec)
+    seriestype --> :heatmap
+    return colorseries!(plotattributes, (x, y), values, spec, seriestypeof(plotattributes))
 end
 ```
 
-`colorattributes!` sets `clims`, `seriescolor`, and, for a graduated
-specification, `colorbar_ticks`, all as `-->` defaults so an explicit keyword on
-the call still wins.
+`colorseries!` sets `clims`, `seriescolor`, and, for a graduated specification,
+`colorbar_ticks`, then routes `values` the way the seriestype demands:
+positional for a surface-like series, `line_z` or `marker_z` otherwise, and
+both when there are no positions. Every attribute goes in with `get!`, the
+same soft-default semantics as `-->`, so an explicit keyword on the call still
+wins. The shorthand recipes `delete!` the keywords they consume first, so the
+computed values replace them.
 
 ```julia
 heatmap(elevation, spec; title = "elevation", colorbar_title = "metre")
@@ -190,6 +190,11 @@ Plots needs no separate colorbar call, because `colorbar_ticks` rides along on
 the series. That asymmetry with Makie is a property of the two libraries and is
 documented rather than hidden: in Makie the colorbar is a separate object and
 therefore takes the specification separately.
+
+A pre-existing limitation carries over: Plots' GR backend only tests
+`colorbar_ticks` for presence and then draws its own numeric axis, so the class
+labels reach `pythonplot` and `pgfplotsx` but not GR. The 0.1.0 adapters had
+the same behavior. It is documented rather than worked around.
 
 `clims = Percentile(2, 98)` keeps working unchanged, because the range methods
 are already callable and Plots calls `clims` on the data itself.

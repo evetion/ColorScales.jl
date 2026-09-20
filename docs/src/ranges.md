@@ -1,9 +1,9 @@
 # Color ranges
 
 A color range is the closed span `(low, high)` mapped onto a colormap.
-`colorrange(z, method)` computes it; `colorspec(z; colorrange = method)` uses it
-directly for a continuous specification, with no class breaks; and
-`makieattributes(spec)` returns the keywords for the plot and its colorbar.
+`colorrange(z, method)` computes it, and a method passed as a plot's last
+argument colors that plot with it directly — no specification to name, because
+a continuous colorbar needs no class labels.
 
 Each figure below shows the same raster and the same scattered points, colored
 only by the outlined method. Look for how much of the colormap the outlier at
@@ -23,17 +23,12 @@ Smallest to largest usable observation. The outlier stretches the whole
 colormap, flattening everything else into a single shade.
 
 ```@example ranges
-rasterspec = colorspec(raster; colorrange = Extrema(), colormap = :turbo)
-rasterattrs = makieattributes(rasterspec)
-pointspec = colorspec(values; colorrange = Extrema(), colormap = :turbo)
-pointattrs = makieattributes(pointspec)
-
 figure = Figure(; size = (760, 340))
 axis1 = Axis(figure[1, 1]; title = "raster", aspect = DataAspect())
-heatmap1 = heatmap!(axis1, raster; rasterattrs.plot...)
-Colorbar(figure[1, 2], heatmap1)
+rastered = heatmap!(axis1, raster, Extrema(); colormap = :turbo)
+Colorbar(figure[1, 2], rastered)
 axis2 = Axis(figure[1, 3]; title = "points", aspect = DataAspect())
-points = scatter!(axis2, xs, ys; color = values, pointattrs.plot..., markersize = 12)
+points = scatter!(axis2, xs, ys, values, Extrema(); colormap = :turbo, markersize = 12)
 Colorbar(figure[1, 4], points)
 figure
 ```
@@ -44,17 +39,12 @@ Two percentiles on the `0`–`100` scale. The outlier saturates at the top of th
 colormap instead of dominating it.
 
 ```@example ranges
-rasterspec = colorspec(raster; colorrange = Percentile(2, 98), colormap = :turbo)
-rasterattrs = makieattributes(rasterspec)
-pointspec = colorspec(values; colorrange = Percentile(2, 98), colormap = :turbo)
-pointattrs = makieattributes(pointspec)
-
 figure = Figure(; size = (760, 340))
 axis1 = Axis(figure[1, 1]; title = "raster", aspect = DataAspect())
-heatmap1 = heatmap!(axis1, raster; rasterattrs.plot...)
-Colorbar(figure[1, 2], heatmap1)
+rastered = heatmap!(axis1, raster, Percentile(2, 98); colormap = :turbo)
+Colorbar(figure[1, 2], rastered)
 axis2 = Axis(figure[1, 3]; title = "points", aspect = DataAspect())
-points = scatter!(axis2, xs, ys; color = values, pointattrs.plot..., markersize = 12)
+points = scatter!(axis2, xs, ys, values, Percentile(2, 98); colormap = :turbo, markersize = 12)
 Colorbar(figure[1, 4], points)
 figure
 ```
@@ -65,17 +55,12 @@ figure
 percentile range depending on how the data is distributed.
 
 ```@example ranges
-rasterspec = colorspec(raster; colorrange = MeanStd(2), colormap = :turbo)
-rasterattrs = makieattributes(rasterspec)
-pointspec = colorspec(values; colorrange = MeanStd(2), colormap = :turbo)
-pointattrs = makieattributes(pointspec)
-
 figure = Figure(; size = (760, 340))
 axis1 = Axis(figure[1, 1]; title = "raster", aspect = DataAspect())
-heatmap1 = heatmap!(axis1, raster; rasterattrs.plot...)
-Colorbar(figure[1, 2], heatmap1)
+rastered = heatmap!(axis1, raster, MeanStd(2); colormap = :turbo)
+Colorbar(figure[1, 2], rastered)
 axis2 = Axis(figure[1, 3]; title = "points", aspect = DataAspect())
-points = scatter!(axis2, xs, ys; color = values, pointattrs.plot..., markersize = 12)
+points = scatter!(axis2, xs, ys, values, MeanStd(2); colormap = :turbo, markersize = 12)
 Colorbar(figure[1, 4], points)
 figure
 ```
@@ -85,17 +70,12 @@ figure
 A caller-chosen span; the data is never inspected.
 
 ```@example ranges
-rasterspec = colorspec(raster; colorrange = FixedRange(0, 5000), colormap = :turbo)
-rasterattrs = makieattributes(rasterspec)
-pointspec = colorspec(values; colorrange = FixedRange(0, 5000), colormap = :turbo)
-pointattrs = makieattributes(pointspec)
-
 figure = Figure(; size = (760, 340))
 axis1 = Axis(figure[1, 1]; title = "raster", aspect = DataAspect())
-heatmap1 = heatmap!(axis1, raster; rasterattrs.plot...)
-Colorbar(figure[1, 2], heatmap1)
+rastered = heatmap!(axis1, raster, FixedRange(0, 5000); colormap = :turbo)
+Colorbar(figure[1, 2], rastered)
 axis2 = Axis(figure[1, 3]; title = "points", aspect = DataAspect())
-points = scatter!(axis2, xs, ys; color = values, pointattrs.plot..., markersize = 12)
+points = scatter!(axis2, xs, ys, values, FixedRange(0, 5000); colormap = :turbo, markersize = 12)
 Colorbar(figure[1, 4], points)
 figure
 ```

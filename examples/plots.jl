@@ -25,5 +25,5 @@ function plots_example()
 
     spec = colorspec(elevation, Pretty(5); colorrange = Percentile(2, 98), colormap = :viridis)
 
-    return Plots.heatmap(elevation; plotsattributes(spec).plot..., title = "Elevation", colorbar_title = "metre")
+    return Plots.heatmap(elevation, spec; title = "Elevation", colorbar_title = "metre")
 end

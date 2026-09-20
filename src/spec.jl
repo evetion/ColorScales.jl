@@ -2,8 +2,9 @@
 Color specifications.
 
 A `ColorSpec` is the renderer-neutral result: a color range, optional class
-breaks, and one PlotUtils gradient shared by every plotting adapter. It never
-retains the observations it came from.
+breaks, and one PlotUtils gradient shared by every renderer. It never retains
+the observations it came from, so one specification can color several plots on
+a shared scale.
 """
 
 """
@@ -15,8 +16,18 @@ a [`ClassBreaks`](@ref) for a graduated one, whose gradient is categorical.
 `colorrange` is what the data gave, including the zero-width `(v, v)` of
 constant data, except that a graduated specification's [`Pretty`](@ref) breaks
 may widen it outward to nice bounds; `colorrange` then matches those widened
-bounds, not the original data-derived range. Only the plotting adapters widen a
-zero-width span into renderer-safe display limits.
+bounds, not the original data-derived range. Only the plotting extensions
+widen a zero-width span into renderer-safe display limits.
+
+Pass a specification to a plotting call as its last argument, after the values
+it colors:
+
+```julia
+spec = colorspec(elevation, Quantile(5); colorrange = Percentile(2, 98))
+heatmap!(axis, elevation, spec)        # Makie
+Colorbar(figure[1, 2], spec)           # Makie
+heatmap(elevation, spec)               # Plots
+```
 """
 struct ColorSpec
     colorrange::Tuple{Float64, Float64}
@@ -113,7 +124,7 @@ symmetrically around `v` by a relative half-width of `sqrt(eps())`, floored at
 half a unit so that `v == 0` widens too, and clipped to `floatmax` so extreme
 centers stay finite.
 
-Only the plotting adapters widen. A [`ColorSpec`](@ref)'s own `colorrange`
+Only the plotting extensions widen. A [`ColorSpec`](@ref)'s own `colorrange`
 keeps the exact `(v, v)` computed from the data.
 """
 function displayrange(bounds::Tuple{Float64, Float64})
@@ -139,6 +150,31 @@ colorrange(spec::ColorSpec) = spec.colorrange
 one without class breaks.
 """
 colorgradient(spec::ColorSpec) = spec.gradient
+
+"""
+    classbreaks(spec::ColorSpec) -> Union{Nothing, ClassBreaks}
+
+`spec`'s graduated classes: `nothing` for a continuous specification.
+
+```jldoctest
+julia> classbreaks(colorspec(0:100, Quantile(2))).edges
+3-element Vector{Float64}:
+   0.0
+  50.0
+ 100.0
+
+julia> classbreaks(colorspec(0:100)) === nothing
+true
+```
+"""
+classbreaks(spec::ColorSpec) = spec.breaks
+
+"""
+    nclasses(spec::ColorSpec) -> Int
+
+Number of graduated classes in `spec`, and `0` for a continuous specification.
+"""
+nclasses(spec::ColorSpec) = spec.breaks === nothing ? 0 : nclasses(spec.breaks)
 
 """
     classticks(spec::ColorSpec) -> Union{Nothing, Tuple}
@@ -189,19 +225,3 @@ function printgradient(io::IO, gradient; width::Int = 40)
     print(io, "\e[0m")
     return nothing
 end
-
-"""
-    makieattributes(spec::ColorSpec) -> (; plot, colorbar)
-
-Makie keyword arguments for `spec`: `plot` for the plotting call and `colorbar`
-for `Colorbar`. Defined by the Makie extension.
-"""
-function makieattributes end
-
-"""
-    plotsattributes(spec::ColorSpec) -> (; plot)
-
-Plots keyword arguments for `spec`: `plot` for the plotting call, including its
-colorbar ticks. Defined by the Plots extension.
-"""
-function plotsattributes end

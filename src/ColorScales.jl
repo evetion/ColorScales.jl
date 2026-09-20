@@ -10,8 +10,7 @@ using PlotUtils
 export Extrema, Percentile, MeanStd, FixedRange, colorrange
 export ClassBreaks, nclasses, classcenters
 export EqualInterval, Quantile, Pretty, breaks
-export ColorSpec, classgradient, colorspec, colorgradient, classticks
-export makieattributes, plotsattributes
+export ColorSpec, classgradient, colorspec, colorgradient, classbreaks, classticks
 
 include("input.jl")
 include("ranges.jl")
