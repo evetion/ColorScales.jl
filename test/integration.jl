@@ -189,6 +189,25 @@ include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
         @test Plots.get_clims(plot[1]) == (2.98, 98.02)
     end
 
+    @testset "a centered range reaches both renderers" begin
+        anomaly = [-2.0 1.0; 3.0 9.0]
+        converted = Makie.convert_arguments(Makie.Heatmap, anomaly, Centered())
+        @test collect(converted.kwargs[:colorrange]) == [-9.0, 9.0]
+        plot = Plots.heatmap(anomaly; clims = Centered())
+        @test Plots.get_clims(plot[1]) == (-9.0, 9.0)
+    end
+
+    @testset "fixed breaks reach both renderers" begin
+        anomaly = [-2.0 1.0; 3.0 9.0]
+        fixed = colorspec(anomaly, FixedBreaks([-10, -5, 0, 5, 10]))
+        @test colorrange(fixed) == (-10.0, 10.0)
+        @test nclasses(fixed) == 4
+        converted = Makie.convert_arguments(Makie.Heatmap, anomaly, fixed)
+        @test collect(converted.kwargs[:colorrange]) == [-10.0, 10.0]
+        plot = Plots.heatmap(anomaly, fixed)
+        @test Plots.get_clims(plot[1]) == (-10.0, 10.0)
+    end
+
     @testset "no exported name collides with a plotting library" begin
         @test isempty(intersect(names(ColorScales), names(Makie)))
         @test isempty(intersect(names(ColorScales), names(Plots)))

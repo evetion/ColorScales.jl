@@ -34,6 +34,7 @@ agree.
 | `Percentile(low, high)` | two percentiles on the `0`–`100` scale, type-7 interpolation |
 | `MeanStd(n = 2; corrected = true)` | `mean ± n * std`, not clamped to the data |
 | `FixedRange(low, high)` | the caller's span; the data is never inspected |
+| `Centered(inner = Extrema(); center = 0)` | `inner`'s range mirrored about `center` |
 
 ```julia
 julia> using ColorScales
@@ -41,6 +42,23 @@ julia> using ColorScales
 julia> colorrange(0:100, Percentile(2, 98))
 (2.0, 98.0)
 ```
+
+`Centered` wraps any of the others. Diverging data — an anomaly, a difference,
+a trend, a correlation — only lines its neutral color up with zero if the range
+is symmetric about it, so centering takes whichever side reaches further and
+mirrors it:
+
+```julia
+julia> colorrange([-1.8, 9.0], Centered())
+(-9.0, 9.0)
+
+julia> colorrange([-1.8, 9.0], Centered(; center = 1))
+(-7.0, 9.0)
+```
+
+That widens the shorter side, which spends part of the colormap on values the
+data never reaches; clipping first with `Centered(Percentile(2, 98))` is the
+usual way to pay less for it.
 
 ## Graduated classes
 
@@ -51,6 +69,7 @@ julia> colorrange(0:100, Percentile(2, 98))
 | `EqualInterval(count)` | equal width over the color range |
 | `Quantile(count)` | equal share of the in-range observations |
 | `Pretty(count = 7)` | interior edges on readable multiples of `{1, 2, 5} * 10ⁿ` |
+| `FixedBreaks(edges)` | the caller's edges; the data is never inspected |
 
 ```julia
 julia> classes = breaks(0:100, Quantile(4); colorrange = Percentile(2, 98));
@@ -148,6 +167,20 @@ heatmap!(axis1, elevation, spec)
 scatter!(axis2, xs, ys, values, spec)
 Colorbar(figure[1, 3], spec; label = "metre")
 ```
+
+When the panels come from separate datasets — years, scenarios, models — no
+data-derived method can promise them the same classes. `FixedBreaks` can,
+because it inspects nothing:
+
+```julia
+edges = FixedBreaks([0, 100, 250, 500, 1000, 2500])
+
+heatmap!(axis1, elevation_1990, colorspec(elevation_1990, edges))
+heatmap!(axis2, elevation_2020, colorspec(elevation_2020, edges))
+```
+
+The edges are authoritative: they become the specification's color range, and a
+`colorrange` passed alongside them is discarded.
 
 ## Shorthand: no specification at all
 

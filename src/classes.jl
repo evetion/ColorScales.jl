@@ -21,14 +21,24 @@ struct ClassBreaks
     closed::Symbol
     function ClassBreaks(edges::AbstractVector{<:Real}; closed = :right)
         closed === :right || throw(ArgumentError("only closed=:right is supported, got $(repr(closed))"))
-        e = collect(Float64, edges)
-        isempty(e) && throw(ArgumentError("class breaks need at least one edge"))
-        all(isfinite, e) || throw(ArgumentError("class edges must be finite, got $e"))
-        for i in firstindex(e):(lastindex(e) - 1)
-            e[i] < e[i + 1] || throw(ArgumentError("class edges must be sorted and unique, got $e"))
-        end
+        e = checkedges(edges)
         return new(e, classlabels(e), closed)
     end
+end
+
+"""
+    checkedges(edges) -> Vector{Float64}
+
+Validate class edges: at least one, all finite, and strictly increasing.
+"""
+function checkedges(edges)
+    e = collect(Float64, edges)
+    isempty(e) && throw(ArgumentError("class breaks need at least one edge"))
+    all(isfinite, e) || throw(ArgumentError("class edges must be finite, got $e"))
+    for i in firstindex(e):(lastindex(e) - 1)
+        e[i] < e[i + 1] || throw(ArgumentError("class edges must be sorted and unique, got $e"))
+    end
+    return e
 end
 
 """

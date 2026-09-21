@@ -72,3 +72,30 @@ scatter!(axis2, xs, ys, values, pointspec; markersize = 12)
 Colorbar(figure[1, 4], pointspec)
 figure
 ```
+
+## `FixedBreaks([0, 25, 100, 225, 400, 625])`
+
+Edges chosen by the caller, in the data's own units. The observations are never
+inspected and the edges become the color range, so the same call classifies
+every panel, year or scenario identically — which is what a figure with more
+than one map needs, and what no data-derived method can promise.
+
+```@example breaks
+edges = [0, 25, 100, 225, 400, 625]
+rasterspec = colorspec(raster, FixedBreaks(edges))
+pointspec = colorspec(values, FixedBreaks(edges))
+
+figure = Figure(; size = (900, 340))
+axis1 = Axis(figure[1, 1]; title = "raster", aspect = DataAspect())
+heatmap!(axis1, raster, rasterspec)
+Colorbar(figure[1, 2], rasterspec)
+axis2 = Axis(figure[1, 3]; title = "points", aspect = DataAspect())
+scatter!(axis2, xs, ys, values, pointspec; markersize = 12)
+Colorbar(figure[1, 4], pointspec)
+figure
+```
+
+The two panels carry one legend because both were classified by the same edges,
+and the classes are free to be unequally wide — here they are evenly spaced in
+distance, not in distance squared. Values past the last edge saturate in the
+top class.

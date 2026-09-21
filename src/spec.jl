@@ -14,10 +14,11 @@ Completed color result. `breaks` is `nothing` for a continuous specification and
 a [`ClassBreaks`](@ref) for a graduated one, whose gradient is categorical.
 
 `colorrange` is what the data gave, including the zero-width `(v, v)` of
-constant data, except that a graduated specification's [`Pretty`](@ref) breaks
-may widen it outward to nice bounds; `colorrange` then matches those widened
-bounds, not the original data-derived range. Only the plotting extensions
-widen a zero-width span into renderer-safe display limits.
+constant data, except where the class edges are authoritative: [`Pretty`](@ref)
+may widen it outward to nice bounds and [`FixedBreaks`](@ref) replaces it
+outright, and `colorrange` then matches those edges rather than the original
+data-derived range. Only the plotting extensions widen a zero-width span into
+renderer-safe display limits.
 
 Pass a specification to a plotting call as its last argument, after the values
 it colors:
@@ -101,13 +102,14 @@ end
 
 function colorspec(data, method::BreakMethod; colorrange = Extrema(), colormap = :viridis, invalid = :skip)
     policy = check_invalid(invalid)
-    selected = rangemethod(colorrange)
+    selected = rangefor(method, rangemethod(colorrange))
     requirement = max(datarequirement(selected), datarequirement(method))
     obs = observe(data, requirement; invalid = policy)
     bounds = rangefrom(obs, selected)
     classes = ClassBreaks(breakedges(obs, method, bounds))
-    # Most break methods span exactly `bounds`, but Pretty may widen it; the
-    # class edges are the source of truth for the resulting color range.
+    # Most break methods span exactly `bounds`, but Pretty may widen it and
+    # FixedBreaks replaces it; the class edges are the source of truth for the
+    # resulting color range.
     spanned = (first(classes.edges), last(classes.edges))
     return ColorSpec(spanned, classes, classgradient(colormap, classes; colorrange = spanned))
 end

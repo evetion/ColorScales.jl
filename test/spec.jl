@@ -172,3 +172,21 @@ using PlotUtils
         @test length(narrow.gradient.colors) == 1
     end
 end
+
+@testset "caller-supplied breaks set the specification's color range" begin
+    spec = colorspec(0:100, FixedBreaks([0, 1, 2, 5, 10]))
+    @test colorrange(spec) == (0.0, 10.0)
+    @test nclasses(spec) == 4
+    @test length(colorgradient(spec).colors) == 4
+    @test classbreaks(spec).edges == [0.0, 1.0, 2.0, 5.0, 10.0]
+    @test colorrange(colorspec(Float64[], FixedBreaks([0, 1, 10]))) == (0.0, 10.0)
+end
+
+@testset "a centered specification mirrors its color range" begin
+    spec = colorspec([-1.0, 5.0]; colorrange = Centered())
+    @test colorrange(spec) == (-5.0, 5.0)
+    @test classbreaks(spec) === nothing
+    # An even class count over a centered range breaks exactly on the center.
+    graduated = colorspec([-1.0, 5.0], EqualInterval(2); colorrange = Centered())
+    @test classbreaks(graduated).edges == [-5.0, 0.0, 5.0]
+end

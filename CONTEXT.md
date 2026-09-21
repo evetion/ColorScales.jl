@@ -18,9 +18,10 @@ except that the first class includes the color range's lower endpoint.
 
 ## Break method
 
-A rule that derives class edges from observations and a color range. A
-requested class count is a target for methods such as pretty breaks; tied data
-can also reduce the resulting count.
+A rule that derives class edges from observations and a color range, or the
+caller's own edges given outright. A requested class count is a target for
+methods such as pretty breaks; tied data can also reduce the resulting count.
+Edges given outright replace the color range instead of being derived from it.
 
 ## Color specification
 
