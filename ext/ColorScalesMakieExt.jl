@@ -45,7 +45,7 @@ function specplot(P::Type{<:Makie.Plot}, positions::Tuple, values, spec::ColorSp
     end
     return Makie.PlotSpec(
         symbol, positions..., arguments...;
-        colorrange = ColorScales.displayrange(colorrange(spec)),
+        colorrange = colorrange(spec),
         colormap = colorgradient(spec),
         colorattribute...,
     )
@@ -113,13 +113,14 @@ Colorbar(figure[1, 2], spec; label = "metre")
 gradient as proportional bands on its own, but labels class edges numerically
 instead of by interval.
 
-A constant color range is widened to renderer-safe display limits around its
-value; `colorrange(spec)` itself stays exact.
+A constant color range arrives widened to renderer-safe display limits around
+its value, as `colorrange(spec)` returns it; `colorrange(spec; display = false)`
+is the exact one.
 """
 function Makie.Colorbar(position, spec::ColorSpec; attributes...)
     defaults = (;
         colormap = colorgradient(spec),
-        colorrange = ColorScales.displayrange(colorrange(spec)),
+        colorrange = colorrange(spec),
     )
     ticks = classticks(spec)
     ticked = ticks === nothing ? defaults : (; defaults..., ticks)
@@ -142,6 +143,6 @@ applies.
 Makie.convert_attribute(spec::ColorSpec, key::Makie.Key{:colormap}) =
     Makie.convert_attribute(colorgradient(spec), key)
 Makie.convert_attribute(spec::ColorSpec, key::Makie.Key{:colorrange}) =
-    Makie.convert_attribute(ColorScales.displayrange(colorrange(spec)), key)
+    Makie.convert_attribute(colorrange(spec), key)
 
 end

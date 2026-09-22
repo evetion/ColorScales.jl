@@ -67,13 +67,13 @@ A color-range method in the same slot gives the continuous case,
 
 ## Constant data
 
-A constant color range keeps its exact `(v, v)` on the specification, but the
-series widens the *display* limits so the renderer has a nonzero span to map
-through:
+`colorrange(spec)` widens a constant range so the renderer has a nonzero span
+to map through, and `display = false` gives the exact `(v, v)` the data
+produced:
 
 ```@example plots
 spec = colorspec(fill(7.0, 4), Quantile(4))
-colorrange(spec), heatmap(fill(7.0, 2, 2), spec)[1][:clims]
+colorrange(spec), colorrange(spec; display = false)
 ```
 
 ## Your own keywords stay in charge
@@ -85,3 +85,26 @@ on the call wins:
 spec = colorspec(raster, Quantile(5); colorrange = Percentile(2, 98))
 heatmap(raster, spec; clims = (0.0, 5000.0), title = "elevation", aspect_ratio = :equal)
 ```
+
+## Writing it out by hand
+
+The recipes above are convenience. Underneath them a specification is three
+plain values, and passing those yourself works whatever else is in the call —
+your own recipe, a series type the recipes do not cover, an argument list they
+would collide with:
+
+```@example plots
+spec = colorspec(raster, Quantile(5); colorrange = Percentile(2, 98))
+heatmap(
+    raster;
+    seriescolor = colorgradient(spec), clims = colorrange(spec),
+    colorbar_ticks = classticks(spec),
+    title = "elevation", aspect_ratio = :equal,
+)
+```
+
+`colorrange(spec)` is renderer-safe as it comes, so nothing here needs a
+special case for constant data. `classticks(spec)` carries the class intervals,
+and is `nothing` for a continuous specification, which needs no tick override —
+as on this whole page, the GR backend draws its own numeric ticks regardless,
+while `pythonplot` and `pgfplotsx` render the intervals.

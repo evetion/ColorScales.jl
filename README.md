@@ -214,23 +214,50 @@ heatmap(elevation, spec; clims = (0.0, 5000.0))      # Plots
 No exported name collides with Makie or Plots, so `using ColorScales, Makie`
 and `using ColorScales, Plots` need no qualification.
 
+## Writing it out by hand
+
+Everything above is convenience. A `ColorSpec` is three plain values, and
+handing them to a plotting call yourself always works — no argument rule, no
+recipe, no conversion, nothing of ColorScales in the call at all:
+
+```julia
+heatmap!(axis, elevation;                       # Makie
+    colormap = colorgradient(spec), colorrange = colorrange(spec))
+
+heatmap(elevation;                              # Plots
+    seriescolor = colorgradient(spec), clims = colorrange(spec))
+```
+
+Reach for this when the argument rule cannot fit — a plot type it does not
+reach, a recipe of your own, or an argument list it would collide with.
+`classticks(spec)` carries the class intervals to a colorbar, as Makie's
+`ticks` or Plots' `colorbar_ticks`, and is `nothing` for a continuous
+specification.
+
 ## Constant data
 
-A specification computed from constant data keeps its exact color range, but a
-renderer cannot map a value through a zero-width span — a categorical gradient
-has no position for it and throws. The plotting extensions therefore widen the
-*display* limits symmetrically around the value, while `colorrange(spec)` stays
-exact:
+A renderer cannot map a value through a zero-width span — a categorical
+gradient has no position for it and throws. `colorrange(spec)` therefore widens
+a constant range symmetrically around its value, which is what makes it safe to
+hand to any plotting call. `display = false` gives the range the data actually
+gave, which is the one the class edges span:
 
 ```julia
 julia> spec = colorspec(fill(7.0, 4), Quantile(4));
 
 julia> colorrange(spec)
+(6.5, 7.5)
+
+julia> colorrange(spec; display = false)
 (7.0, 7.0)
 
-julia> heatmap(fill(7.0, 2, 2), spec)[1][:clims]   # Plots
-(6.5, 7.5)
+julia> classbreaks(spec).edges
+1-element Vector{Float64}:
+ 7.0
 ```
+
+Widening is the identity for every range of nonzero width, so the keyword only
+ever matters for constant data.
 
 ## Right-closed intervals
 

@@ -95,13 +95,13 @@ want the class intervals, or one scale across panels.
 
 ## Constant data
 
-A constant color range keeps its exact `(v, v)` on the specification, but the
-plot and its colorbar widen the *display* limits so the renderer has a nonzero
-span to map through:
+`colorrange(spec)` widens a constant range so the renderer has a nonzero span
+to map through, and `display = false` gives the exact `(v, v)` the data
+produced:
 
 ```@example makie
 spec = colorspec(fill(7.0, 4), Quantile(4))
-colorrange(spec), Makie.convert_arguments(Makie.Heatmap, fill(7.0, 2, 2), spec).kwargs[:colorrange]
+colorrange(spec), colorrange(spec; display = false)
 ```
 
 ## Escape hatch
@@ -120,5 +120,31 @@ figure
 
 Pass `spec` to both keywords together: giving it to only one leaves the other
 at Makie's default, which does not match `spec` and can miscolor the plot.
+
+## Writing it out by hand
+
+That still goes through this package's conversions. Underneath them a
+specification is three plain values, and passing those yourself works whatever
+else is in the call — your own recipe, an argument list the rule would collide
+with, a plot type neither route reaches:
+
+```@example makie
+spec = colorspec(raster, Quantile(5); colorrange = Percentile(2, 98))
+
+figure = Figure(; size = (500, 420))
+axis = Axis(figure[1, 1]; title = "elevation", aspect = DataAspect())
+heatmap!(axis, raster; colormap = colorgradient(spec), colorrange = colorrange(spec))
+Colorbar(
+    figure[1, 2]; label = "metre",
+    colormap = colorgradient(spec), colorrange = colorrange(spec), ticks = classticks(spec),
+)
+figure
+```
+
+`colorrange(spec)` is renderer-safe as it comes, so nothing here needs a
+special case for constant data. `classticks(spec)` is what labels each class
+center with its interval; it is `nothing` for a continuous specification, whose
+colorbar needs no tick override at all.
+
 `colorrange(spec)`, `colorgradient(spec)`, `classbreaks(spec)`, and
-`classticks(spec)` are the accessors everything above is built from.
+`classticks(spec)` are the accessors everything on this page is built from.

@@ -13,12 +13,13 @@ a shared scale.
 Completed color result. `breaks` is `nothing` for a continuous specification and
 a [`ClassBreaks`](@ref) for a graduated one, whose gradient is categorical.
 
-`colorrange` is what the data gave, including the zero-width `(v, v)` of
-constant data, except where the class edges are authoritative: [`Pretty`](@ref)
-may widen it outward to nice bounds and [`FixedBreaks`](@ref) replaces it
-outright, and `colorrange` then matches those edges rather than the original
-data-derived range. Only the plotting extensions widen a zero-width span into
-renderer-safe display limits.
+The `colorrange` field is what the data gave, including the zero-width `(v, v)`
+of constant data, except where the class edges are authoritative:
+[`Pretty`](@ref) may widen it outward to nice bounds and [`FixedBreaks`](@ref)
+replaces it outright, and the field then matches those edges rather than the
+original data-derived range. The [`colorrange`](@ref) accessor returns that
+field widened into renderer-safe limits, which changes nothing unless the range
+is constant.
 
 Pass a specification to a plotting call as its last argument, after the values
 it colors:
@@ -126,8 +127,9 @@ symmetrically around `v` by a relative half-width of `sqrt(eps())`, floored at
 half a unit so that `v == 0` widens too, and clipped to `floatmax` so extreme
 centers stay finite.
 
-Only the plotting extensions widen. A [`ColorSpec`](@ref)'s own `colorrange`
-keeps the exact `(v, v)` computed from the data.
+This is what `colorrange(spec)` returns by default;
+`colorrange(spec; display = false)` keeps the exact `(v, v)` computed from the
+data, and so does the [`ColorSpec`](@ref)'s own field.
 """
 function displayrange(bounds::Tuple{Float64, Float64})
     low, high = bounds
@@ -139,11 +141,26 @@ function displayrange(bounds::Tuple{Float64, Float64})
 end
 
 """
-    colorrange(spec::ColorSpec) -> Tuple{Float64,Float64}
+    colorrange(spec::ColorSpec; display=true) -> Tuple{Float64,Float64}
 
-`spec`'s color range, exactly as [`colorspec`](@ref) computed it.
+`spec`'s color range, ready to hand to a renderer as its `colorrange` or
+`clims`.
+
+`display=true` widens a constant range into [`displayrange`](@ref)'s
+renderer-safe limits, which is the identity for every range of nonzero width.
+Pass `display=false` for the range exactly as [`colorspec`](@ref) computed it,
+including the zero-width `(v, v)` of constant data, which is what `spec`'s
+class edges span but no renderer can map a value through.
+
+```jldoctest
+julia> spec = colorspec(fill(7.0, 4), Quantile(4));
+
+julia> colorrange(spec), colorrange(spec; display = false)
+((6.5, 7.5), (7.0, 7.0))
+```
 """
-colorrange(spec::ColorSpec) = spec.colorrange
+colorrange(spec::ColorSpec; display::Bool = true) =
+    display ? displayrange(spec.colorrange) : spec.colorrange
 
 """
     colorgradient(spec::ColorSpec) -> PlotUtils.ColorGradient

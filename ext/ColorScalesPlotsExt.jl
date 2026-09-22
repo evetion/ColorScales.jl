@@ -22,12 +22,13 @@ on the series.
 The GR backend draws its own numeric colorbar ticks and ignores custom labels;
 `pythonplot` and `pgfplotsx` render them.
 
-A constant color range is widened to renderer-safe display limits around its
-value; `colorrange(spec)` itself stays exact.
+A constant color range arrives widened to renderer-safe display limits around
+its value, as `colorrange(spec)` returns it; `colorrange(spec; display = false)`
+is the exact one.
 """
 function colorattributes(spec::ColorSpec)
     attributes = (;
-        clims = ColorScales.displayrange(colorrange(spec)),
+        clims = colorrange(spec),
         seriescolor = colorgradient(spec),
     )
     ticks = classticks(spec)

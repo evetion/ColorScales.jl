@@ -218,14 +218,19 @@ include(joinpath(@__DIR__, "..", "examples", "plots.jl"))
     @testset "constant data still renders" begin
         constant = fill(7.0, 10, 10)
         flat = colorspec(constant, Quantile(4))
-        @test colorrange(flat) == (7.0, 7.0)
+        @test colorrange(flat; display = false) == (7.0, 7.0)
+        @test colorrange(flat) == (6.5, 7.5)
         @test classbreaks(flat).edges == [7.0]
         @test nclasses(flat) == 1
 
+        # Passing the accessors by hand must reach the renderer with exactly
+        # what the argument rule sends, constant data included.
         converted = Makie.convert_arguments(Makie.Heatmap, constant, flat)
         widened = collect(converted.kwargs[:colorrange])
         @test all(isfinite, widened)
         @test widened[1] < 7.0 < widened[2]
+        @test widened ≈ collect(colorrange(flat))
+        @test converted.kwargs[:colormap] === colorgradient(flat)
 
         figure = Makie.Figure()
         axis = Makie.Axis(figure[1, 1])
