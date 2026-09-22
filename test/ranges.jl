@@ -84,4 +84,50 @@ using ColorScales
         @test colorrange(z, Percentile(2, 98)) == (7.0, 7.0)
         @test colorrange(z, MeanStd(3)) == (7.0, 7.0)
     end
+
+    @testset "centered" begin
+        @test colorrange([-3.0, 1.0], Centered()) == (-3.0, 3.0)
+        @test colorrange([-1.0, 5.0], Centered()) == (-5.0, 5.0)
+        @test colorrange([-4.0, 4.0], Centered()) == (-4.0, 4.0)
+        @test Centered().center == 0.0
+        @test Centered()([-3.0, 1.0]) == (-3.0, 3.0)
+    end
+
+    @testset "centered widens the shorter side" begin
+        @test colorrange([2.0, 10.0], Centered()) == (-10.0, 10.0)
+        @test colorrange([-10.0, -2.0], Centered()) == (-10.0, 10.0)
+    end
+
+    @testset "centered wraps any inner range method" begin
+        z = collect(-50.0:100.0)
+        @test colorrange(z, Centered(Extrema())) == (-100.0, 100.0)
+        @test colorrange(z, Centered(Percentile(2, 98))) == (-97.0, 97.0)
+        @test colorrange(Float64[], Centered(FixedRange(-5, 20))) == (-20.0, 20.0)
+        @test colorrange(Float64[], Centered((-5, 20))) == (-20.0, 20.0)
+        spread = [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]
+        @test colorrange(spread, Centered(MeanStd(2; corrected = false))) == (-9.0, 9.0)
+    end
+
+    @testset "centered about another value" begin
+        @test colorrange([0.0, 4.0], Centered(; center = 1)) == (-2.0, 4.0)
+        @test colorrange([0.5, 2.0], Centered(; center = 1.0)) == (0.0, 2.0)
+        # A center outside the inner range still yields a range containing it.
+        @test colorrange([5.0, 10.0], Centered(; center = 20)) == (5.0, 35.0)
+    end
+
+    @testset "centered constant data" begin
+        @test colorrange([0.0, 0.0], Centered()) == (0.0, 0.0)
+        @test colorrange([3.0, 3.0], Centered()) == (-3.0, 3.0)
+        @test colorrange([7.0], Centered(; center = 7)) == (7.0, 7.0)
+    end
+
+    @testset "centered validation" begin
+        @test_throws ArgumentError Centered(; center = NaN)
+        @test_throws ArgumentError Centered(; center = Inf)
+        @test_throws ArgumentError Centered(:extrema)
+        @test_throws ArgumentError Centered((10, 0))
+        @test_throws ArgumentError colorrange(Float64[], Centered())
+        @test colorrange([-3.0, missing, NaN, 1.0], Centered()) == (-3.0, 3.0)
+        @test_throws ArgumentError colorrange([-3.0, missing, 1.0], Centered(); invalid = :error)
+    end
 end

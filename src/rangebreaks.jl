@@ -1,11 +1,12 @@
 """
 Range-based class breaks.
 
-These methods place class edges from the selected color range alone.
-[`EqualInterval`](@ref) and [`Quantile`](@ref) keep the color range
-authoritative: their first and last edge always equal its endpoints.
-[`Pretty`](@ref) is the one exception: it may widen the range outward to nice
-bounds, and the widened bounds become the color range downstream.
+These methods place class edges without inspecting the observations.
+[`EqualInterval`](@ref) keeps the color range authoritative: its first and last
+edge always equal the range's endpoints, as [`Quantile`](@ref)'s do.
+[`Pretty`](@ref) may widen the range outward to nice bounds and
+[`FixedBreaks`](@ref) replaces it outright; in both cases the resulting edges
+become the color range downstream.
 """
 
 """
@@ -16,6 +17,15 @@ method is callable, so `EqualInterval(4)(z)` is shorthand for
 `breaks(z, EqualInterval(4))`.
 """
 abstract type BreakMethod end
+
+"""
+    rangefor(method, selected) -> the color-range method that is used
+
+`selected`, except for a break method whose edges are authoritative:
+[`FixedBreaks`](@ref) dictates its own color range, so the requested one is
+validated and then discarded and the data is never inspected on its account.
+"""
+rangefor(::BreakMethod, selected) = selected
 
 """
     dedupe(edges) -> Vector{Float64}
@@ -133,8 +143,26 @@ struct Pretty <: BreakMethod
     Pretty(count = 7) = new(checkcount(count))
 end
 
+"""
+    FixedBreaks(edges)
+
+Class edges supplied by the caller. The observations are never inspected.
+
+The edges are authoritative, so they become the color range and a `colorrange`
+passed alongside them is validated and then discarded. Fixed edges are what
+panels, years or scenarios that must share one legend need, and they are the
+only way to place classes of unequal width.
+"""
+struct FixedBreaks <: BreakMethod
+    edges::Vector{Float64}
+    FixedBreaks(edges) = new(checkedges(edges))
+end
+
 datarequirement(::EqualInterval) = REQUIRE_NONE
 datarequirement(::Pretty) = REQUIRE_NONE
+datarequirement(::FixedBreaks) = REQUIRE_NONE
+
+rangefor(m::FixedBreaks, ::Any) = (first(m.edges), last(m.edges))
 
 function breakedges(::Any, method::EqualInterval, colorrange::Tuple{Float64, Float64})
     low, high = colorrange
@@ -149,6 +177,8 @@ function breakedges(::Any, method::Pretty, colorrange::Tuple{Float64, Float64})
     low == high && return [low]
     return prettyedges(low, high, method.count)
 end
+
+breakedges(::Any, method::FixedBreaks, ::Tuple{Float64, Float64}) = copy(method.edges)
 
 """
     breaks(data, method; colorrange=Extrema(), invalid=:skip) -> ClassBreaks
@@ -171,7 +201,7 @@ julia> breaks(0:10, EqualInterval(2)).edges
 """
 function breaks(data, method::BreakMethod; colorrange = Extrema(), invalid = :skip)
     policy = check_invalid(invalid)
-    selected = rangemethod(colorrange)
+    selected = rangefor(method, rangemethod(colorrange))
     requirement = max(datarequirement(selected), datarequirement(method))
     obs = observe(data, requirement; invalid = policy)
     return ClassBreaks(breakedges(obs, method, rangefrom(obs, selected)))

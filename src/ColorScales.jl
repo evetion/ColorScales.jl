@@ -7,11 +7,10 @@ module ColorScales
 
 using PlotUtils
 
-export Extrema, Percentile, MeanStd, FixedRange, colorrange
+export Extrema, Percentile, MeanStd, FixedRange, Centered, colorrange
 export ClassBreaks, nclasses, classcenters
-export EqualInterval, Quantile, Pretty, breaks
-export ColorSpec, classgradient, colorspec, colorgradient, classticks
-export makieattributes, plotsattributes
+export EqualInterval, Quantile, Pretty, FixedBreaks, breaks
+export ColorSpec, classgradient, colorspec, colorgradient, classbreaks, classticks
 
 include("input.jl")
 include("ranges.jl")

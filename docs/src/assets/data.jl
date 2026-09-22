@@ -21,3 +21,13 @@ function sample_points()
     values[1] = 1.0e6
     return xs, ys, values
 end
+
+# `anomaly` is a diverging field: a smooth wave biased upward, with one strong
+# positive excursion, so its extremes are lopsided and centering visibly moves
+# the colormap's neutral color onto zero.
+
+function sample_anomaly()
+    field = [3.0 * sin(i / 6) * cos(j / 7) + 1.2 for i in 1:40, j in 1:40]
+    field[12, 28] = 9.0
+    return field
+end

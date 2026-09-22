@@ -94,3 +94,35 @@ end
     @test breaks(Iterators.Stateful(0.0:10.0), Quantile(2)).edges == [0.0, 5.0, 10.0]
     @test colorrange(Iterators.Stateful(0.0:10.0), Percentile(0, 100)) == (0.0, 10.0)
 end
+
+@testset "caller-supplied breaks" begin
+    @testset "edges are used as given" begin
+        @test breaks(0:100, FixedBreaks([0, 1, 2, 5, 10])).edges == [0.0, 1.0, 2.0, 5.0, 10.0]
+        @test nclasses(breaks(0:100, FixedBreaks([0, 1, 2]))) == 2
+        @test breaks(0:100, FixedBreaks([0, 1, 2])).labels == ["[0, 1]", "(1, 2]"]
+        @test breaks(0:100, FixedBreaks([5])).edges == [5.0]
+        @test nclasses(breaks(0:100, FixedBreaks([5]))) == 1
+        @test FixedBreaks([0, 10])(0:100).edges == [0.0, 10.0]
+    end
+
+    @testset "the data is never inspected" begin
+        @test breaks(Float64[], FixedBreaks([0, 10])).edges == [0.0, 10.0]
+        @test breaks([missing, NaN], FixedBreaks([0, 10])).edges == [0.0, 10.0]
+        @test breaks((), FixedBreaks([0, 5, 10])).edges == [0.0, 5.0, 10.0]
+        @test breaks([1.0, missing], FixedBreaks([0, 10]); invalid = :error).edges == [0.0, 10.0]
+    end
+
+    @testset "the requested color range is discarded" begin
+        @test breaks(0:100, FixedBreaks([0, 10]); colorrange = Percentile(2, 98)).edges == [0.0, 10.0]
+        @test breaks(0:100, FixedBreaks([0, 10]); colorrange = (-5, 5)).edges == [0.0, 10.0]
+        @test_throws ArgumentError breaks(0:100, FixedBreaks([0, 10]); colorrange = (10, 0))
+    end
+
+    @testset "constructor validation" begin
+        @test_throws ArgumentError FixedBreaks(Float64[])
+        @test_throws ArgumentError FixedBreaks([10, 0])
+        @test_throws ArgumentError FixedBreaks([0, 0, 1])
+        @test_throws ArgumentError FixedBreaks([0, NaN])
+        @test_throws ArgumentError FixedBreaks([0, Inf])
+    end
+end

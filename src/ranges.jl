@@ -70,11 +70,41 @@ struct FixedRange <: ColorRangeMethod
     end
 end
 
+"""
+    Centered(inner=Extrema(); center=0)
+
+Color range symmetric about `center`, widened to whichever side of `inner`'s
+range reaches further.
+
+Use it for diverging data — anomalies, differences, trends, correlations — so a
+diverging colormap's neutral color lands on `center`. `inner` is any other
+color-range method or an explicit `(low, high)` pair, so
+`Centered(Percentile(2, 98))` clips the outliers first and centers what remains.
+Centering widens the shorter side, which spends up to half the colormap on
+values the data never reaches.
+
+```jldoctest
+julia> colorrange([-1.0, 5.0], Centered())
+(-5.0, 5.0)
+```
+"""
+struct Centered{M} <: ColorRangeMethod
+    inner::M
+    center::Float64
+    function Centered(inner = Extrema(); center::Real = 0)
+        c = Float64(center)
+        isfinite(c) || throw(ArgumentError("center must be finite, got $center"))
+        selected = rangemethod(inner)
+        return new{typeof(selected)}(selected, c)
+    end
+end
+
 datarequirement(::Extrema) = REQUIRE_SUMMARY
 datarequirement(::Percentile) = REQUIRE_VALUES
 datarequirement(::MeanStd) = REQUIRE_SUMMARY
 datarequirement(::FixedRange) = REQUIRE_NONE
 datarequirement(::Tuple{Float64, Float64}) = REQUIRE_NONE
+datarequirement(m::Centered) = datarequirement(m.inner)
 
 """
     checkrange(bounds) -> Tuple{Float64,Float64}
@@ -117,6 +147,14 @@ function rangefrom(obs, m::MeanStd)
 end
 
 rangefrom(::Any, m::FixedRange) = (m.low, m.high)
+
+function rangefrom(obs, m::Centered)
+    low, high = rangefrom(obs, m.inner)
+    # Non-negative even when the center lies outside the inner range, so the
+    # result always contains it.
+    radius = max(high - m.center, m.center - low)
+    return (m.center - radius, m.center + radius)
+end
 
 """
     colorrange(data, method=Extrema(); invalid=:skip) -> Tuple{Float64,Float64}

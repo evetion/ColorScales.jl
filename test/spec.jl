@@ -84,11 +84,15 @@ using PlotUtils
         graduated = colorspec(z, Quantile(4); colorrange = Percentile(2, 98))
         @test colorrange(graduated) == graduated.colorrange
         @test colorgradient(graduated) === graduated.gradient
+        @test classbreaks(graduated) === graduated.breaks
+        @test nclasses(graduated) == nclasses(graduated.breaks) == 4
         @test classticks(graduated) == (classcenters(graduated.breaks), graduated.breaks.labels)
 
         continuous = colorspec(0:10)
         @test colorrange(continuous) == continuous.colorrange
         @test colorgradient(continuous) === continuous.gradient
+        @test classbreaks(continuous) === nothing
+        @test nclasses(continuous) == 0
         @test classticks(continuous) === nothing
     end
 
@@ -114,6 +118,21 @@ using PlotUtils
             @test spec.breaks.edges[begin] == spec.colorrange[1]
             @test spec.breaks.edges[end] == spec.colorrange[2]
         end
+    end
+
+    @testset "the accessor is renderer-safe by default" begin
+        flat = colorspec(fill(7.0, 4), Quantile(4))
+        @test colorrange(flat) == (6.5, 7.5)
+        @test colorrange(flat; display = false) == (7.0, 7.0)
+        @test flat.colorrange == (7.0, 7.0)
+        @test classbreaks(flat).edges == [7.0]
+    end
+
+    @testset "widening is the identity for a nondegenerate range" begin
+        spec = colorspec(0:100, Quantile(4); colorrange = Percentile(2, 98))
+        @test colorrange(spec) === colorrange(spec; display = false) === (2.0, 98.0)
+        continuous = colorspec(0:100)
+        @test colorrange(continuous) === colorrange(continuous; display = false)
     end
 
     @testset "renderer-safe display range" begin
@@ -167,4 +186,22 @@ using PlotUtils
         @test nclasses(narrow.breaks) == 1
         @test length(narrow.gradient.colors) == 1
     end
+end
+
+@testset "caller-supplied breaks set the specification's color range" begin
+    spec = colorspec(0:100, FixedBreaks([0, 1, 2, 5, 10]))
+    @test colorrange(spec) == (0.0, 10.0)
+    @test nclasses(spec) == 4
+    @test length(colorgradient(spec).colors) == 4
+    @test classbreaks(spec).edges == [0.0, 1.0, 2.0, 5.0, 10.0]
+    @test colorrange(colorspec(Float64[], FixedBreaks([0, 1, 10]))) == (0.0, 10.0)
+end
+
+@testset "a centered specification mirrors its color range" begin
+    spec = colorspec([-1.0, 5.0]; colorrange = Centered())
+    @test colorrange(spec) == (-5.0, 5.0)
+    @test classbreaks(spec) === nothing
+    # An even class count over a centered range breaks exactly on the center.
+    graduated = colorspec([-1.0, 5.0], EqualInterval(2); colorrange = Centered())
+    @test classbreaks(graduated).edges == [-5.0, 0.0, 5.0]
 end
